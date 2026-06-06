@@ -1,0 +1,8 @@
+-- =============================================================
+-- MODULE 18: JSA/JHA Builder — Seed Data
+-- =============================================================
+-- No lookup seed data needed for this module.
+-- JSA status values are enforced via CHECK constraints in schema.
+-- Hazard types and control hierarchy values are free-text fields
+-- that the application layer validates; no lookup tables required.
+-- =============================================================

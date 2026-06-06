@@ -1,0 +1,12 @@
+-- =============================================================
+-- MODULE 25: Triggers & Functions — Mental Health & Wellbeing
+-- =============================================================
+-- None of the three wellbeing tables carry an updated_at column,
+-- so no timestamp triggers are required for this module.
+-- (wellbeing_resources, wellbeing_check_ins, and wellbeing_programs
+--  are insert-only or status-toggled via direct UPDATE; no
+--  updated_at column was defined in the schema.)
+-- =============================================================
+
+-- No triggers required for this module.
+-- Placeholder to maintain consistent migration file structure.

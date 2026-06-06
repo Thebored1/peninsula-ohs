@@ -1,0 +1,9 @@
+-- PPE Issuance Tracking Module — Triggers
+-- Note: ppe_items, ppe_issuances, and ppe_fit_tests do not have updated_at columns,
+-- so no timestamp triggers are needed for this module.
+-- If updated_at columns are added in future, add triggers following the pattern below:
+--
+-- CREATE OR REPLACE FUNCTION update_ppe_items_timestamp() RETURNS TRIGGER AS $$
+-- BEGIN NEW.updated_at = now(); RETURN NEW; END;
+-- $$ LANGUAGE plpgsql;
+-- CREATE TRIGGER trg_ppe_items_updated BEFORE UPDATE ON ppe_items FOR EACH ROW EXECUTE FUNCTION update_ppe_items_timestamp();

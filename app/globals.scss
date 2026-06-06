@@ -1,0 +1,26 @@
+@use '@carbon/react/index.scss';
+
+// Override Carbon font with next/font variable
+body {
+  font-family: var(--font-ibm-plex-sans), 'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif;
+}
+
+// Full-width button utility
+.btn-full-width {
+  width: 100%;
+  max-width: 100%;
+}
+
+// Page layout helpers
+.page-content {
+  padding: 2rem;
+}
+
+.stat-tile {
+  min-height: 6rem;
+}
+
+// Sidebar active link highlight
+.cds--side-nav__link--current {
+  background-color: var(--cds-layer-selected, #e0e0e0);
+}

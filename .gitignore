@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+dist/
+
+# Environment variables
+.env.local
+.env*.local
+*.local
+
+# Supabase temp files
+supabase/.temp/
+
+# Build artifacts
+tsconfig.tsbuildinfo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE / tool config
+.claude/
+.codex/
+.mcp.json
+
+# Dev server output logs
+dev-clean.txt
+dev-fresh.txt
+dev-output.txt
+check-console.mjs
