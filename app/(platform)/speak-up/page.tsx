@@ -31,9 +31,7 @@ export default async function SpeakUpPage() {
     supabase
       .from('speak_up_categories')
       .select('id, name')
-      .eq('organisation_id', orgId)
-      .eq('is_active', true)
-      .order('name', { ascending: true }),
+      .order('display_order', { ascending: true }),
   ])
 
   // Build category counts for summary bar

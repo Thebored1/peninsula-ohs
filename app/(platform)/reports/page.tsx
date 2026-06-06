@@ -37,7 +37,8 @@ export default async function ReportsPage() {
   let orgId: string
   if (user) {
     const { data: profile } = await supabase.from('user_profiles').select('organisation_id').eq('id', user.id).single()
-    orgId = profile!.organisation_id
+    orgId = profile?.organisation_id ?? null
+    if (!orgId) return <div style={{ padding: '2rem' }}><p style={{ color: '#6f6f6f' }}>Profile not found.</p></div>
   } else {
     const { data: firstOrg } = await supabase.from('organisations').select('id').limit(1).single()
     if (!firstOrg) return <div style={{ padding: '2rem' }}><p>No organisation found.</p></div>
