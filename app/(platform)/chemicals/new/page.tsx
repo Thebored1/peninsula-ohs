@@ -3,6 +3,8 @@ import { Breadcrumb, BreadcrumbItem, Grid, Column } from '@carbon/react'
 import { ChemicalForm } from './ChemicalForm'
 import { createChemical } from '@/app/actions/chemicals'
 
+export const dynamic = 'force-dynamic'
+
 export default async function NewChemicalPage() {
   const supabase = await createClient()
 

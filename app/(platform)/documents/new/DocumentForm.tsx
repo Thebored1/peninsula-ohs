@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import {
   Grid, Column, Tile, Button, Select, SelectItem, TextInput, TextArea,
-  Form, FormGroup, InlineNotification, Toggle,
+  Form, FormGroup, InlineNotification, Toggle, FileUploaderButton,
 } from '@carbon/react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -40,6 +40,7 @@ export function DocumentForm({ docTypes, docStatuses, users, workflows, action }
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [requiresAck, setRequiresAck] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -49,21 +50,19 @@ export function DocumentForm({ docTypes, docStatuses, users, workflows, action }
     const formData = new FormData(e.currentTarget)
     formData.set('requires_acknowledgement', requiresAck ? 'true' : 'false')
 
-    // FILE UPLOAD PATTERN
-    const supabase = createClient()
-    const fileInput = e.currentTarget.querySelector('input[data-upload="true"]') as HTMLInputElement
-    const file = fileInput?.files?.[0]
-    if (file) {
-      const ext = file.name.split('.').pop() ?? 'bin'
+    // FILE UPLOAD
+    if (selectedFile) {
+      const supabase = createClient()
+      const ext = selectedFile.name.split('.').pop() ?? 'bin'
       const uploadPath = crypto.randomUUID() + '.' + ext
-      const { data: upload, error: uploadErr } = await supabase.storage.from('documents').upload(uploadPath, file, { upsert: true })
+      const { data: upload, error: uploadErr } = await supabase.storage.from('documents').upload(uploadPath, selectedFile, { upsert: true })
       if (uploadErr) { setError('File upload failed: ' + uploadErr.message); setLoading(false); return }
       if (upload) {
         const { data: urlData } = supabase.storage.from('documents').getPublicUrl(upload.path)
         formData.set('file_url', urlData.publicUrl)
-        formData.set('file_name', file.name)
-        formData.set('file_size_bytes', String(file.size))
-        formData.set('file_mime_type', file.type)
+        formData.set('file_name', selectedFile.name)
+        formData.set('file_size_bytes', String(selectedFile.size))
+        formData.set('file_mime_type', selectedFile.type)
       }
     }
 
@@ -91,15 +90,18 @@ export function DocumentForm({ docTypes, docStatuses, users, workflows, action }
                 <p style={{ fontSize: '0.875rem', color: '#6f6f6f', marginBottom: '1rem' }}>
                   Attach the actual document file. Supported formats: PDF, Word, Excel, PowerPoint, plain text.
                 </p>
-                <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#161616', marginBottom: '0.5rem' }}>
-                  Upload File (PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT)
-                </p>
-                <input
-                  type="file"
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
-                  data-upload="true"
-                  style={{ display: 'block', marginBottom: '1rem', fontSize: '0.875rem' }}
+                <FileUploaderButton
+                  labelText="Choose file to upload"
+                  accept={['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt']}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSelectedFile(e.target.files?.[0] ?? null)}
+                  size="md"
+                  style={{ marginBottom: '0.5rem' }}
                 />
+                {selectedFile && (
+                  <p style={{ fontSize: '0.875rem', color: '#525252', marginTop: '0.5rem', marginBottom: '0.5rem' }}>
+                    Selected: <strong>{selectedFile.name}</strong> ({(selectedFile.size / 1024).toFixed(1)} KB)
+                  </p>
+                )}
                 <Grid condensed>
                   <Column sm={4} md={4} lg={8}>
                     <FormGroup legendText="" style={{ marginBottom: '1rem' }}>

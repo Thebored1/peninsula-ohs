@@ -3,6 +3,8 @@ import { getOrgId } from '@/lib/supabase/get-org-id'
 import { Breadcrumb, BreadcrumbItem, Grid, Column } from '@carbon/react'
 import RiskForm from './RiskForm'
 
+export const dynamic = 'force-dynamic'
+
 interface PageProps {
   searchParams: Promise<{ template_id?: string }>
 }

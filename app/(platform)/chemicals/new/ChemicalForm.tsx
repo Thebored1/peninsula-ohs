@@ -4,7 +4,7 @@ import { useState } from 'react'
 import {
   Grid, Column, Tile, Button, Select, SelectItem, TextInput, TextArea,
   Form, FormGroup, Toggle, InlineNotification, NumberInput, DatePicker,
-  DatePickerInput,
+  DatePickerInput, FileUploaderButton,
 } from '@carbon/react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -23,6 +23,7 @@ export function ChemicalForm({ categories, physicalStates, action }: Props) {
   const [isHazardous, setIsHazardous] = useState(true)
   const [sdsIssueDate, setSdsIssueDate] = useState('')
   const [sdsReviewDate, setSdsReviewDate] = useState('')
+  const [selectedSds, setSelectedSds] = useState<File | null>(null)
 
   function formatDateForInput(dates: readonly Date[]): string {
     if (!dates || dates.length === 0) return ''
@@ -42,19 +43,17 @@ export function ChemicalForm({ categories, physicalStates, action }: Props) {
     const formData = new FormData(e.currentTarget)
     formData.set('is_hazardous', String(isHazardous))
 
-    // FILE UPLOAD PATTERN
-    const supabase = createClient()
-    const fileInput = e.currentTarget.querySelector('input[data-upload="true"]') as HTMLInputElement
-    const file = fileInput?.files?.[0]
-    if (file) {
-      const ext = file.name.split('.').pop() ?? 'bin'
+    // SDS FILE UPLOAD
+    if (selectedSds) {
+      const supabase = createClient()
+      const ext = selectedSds.name.split('.').pop() ?? 'pdf'
       const uploadPath = crypto.randomUUID() + '.' + ext
-      const { data: upload, error: uploadErr } = await supabase.storage.from('sds-documents').upload(uploadPath, file, { upsert: true })
+      const { data: upload, error: uploadErr } = await supabase.storage.from('sds-documents').upload(uploadPath, selectedSds, { upsert: true })
       if (uploadErr) { setError('SDS upload failed: ' + uploadErr.message); setLoading(false); return }
       if (upload) {
         const { data: urlData } = supabase.storage.from('sds-documents').getPublicUrl(upload.path)
         formData.set('sds_file_url', urlData.publicUrl)
-        formData.set('sds_file_name', file.name)
+        formData.set('sds_file_name', selectedSds.name)
       }
     }
 
@@ -83,15 +82,21 @@ export function ChemicalForm({ categories, physicalStates, action }: Props) {
               </div>
               <div style={{ padding: '1.5rem' }}>
                 <div style={{ marginBottom: '1rem' }}>
-                  <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#161616', marginBottom: '0.5rem' }}>
+                  <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#161616', marginBottom: '0.75rem' }}>
                     Upload SDS Document (PDF) — required for WHMIS compliance
                   </p>
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    data-upload="true"
-                    style={{ marginBottom: '1rem', fontSize: '0.875rem', color: '#161616' }}
+                  <FileUploaderButton
+                    labelText="Choose SDS PDF"
+                    accept={['.pdf']}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSelectedSds(e.target.files?.[0] ?? null)}
+                    size="md"
+                    style={{ marginBottom: '0.5rem' }}
                   />
+                  {selectedSds && (
+                    <p style={{ fontSize: '0.875rem', color: '#525252', marginTop: '0.5rem', marginBottom: '0.5rem' }}>
+                      Selected: <strong>{selectedSds.name}</strong> ({(selectedSds.size / 1024).toFixed(1)} KB)
+                    </p>
+                  )}
                 </div>
                 <Grid condensed>
                   <Column sm={4} md={4} lg={8}>

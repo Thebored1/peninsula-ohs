@@ -3,6 +3,8 @@ import { Breadcrumb, BreadcrumbItem, Grid, Column } from '@carbon/react'
 import { DocumentForm } from './DocumentForm'
 import { createDocument } from '@/app/actions/documents'
 
+export const dynamic = 'force-dynamic'
+
 export default async function NewDocumentPage() {
   const supabase = await createClient()
 
