@@ -7,15 +7,20 @@ export default async function OrganisationSettingsPage() {
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
-  const { data: profile } = user
-    ? await supabase.from('user_profiles').select('organisation_id').eq('id', user.id).single()
-    : { data: null }
+  let orgId: string | null = null
+  if (user) {
+    const { data: profile } = await supabase.from('user_profiles').select('organisation_id').eq('id', user.id).single()
+    orgId = profile?.organisation_id ?? null
+  } else {
+    const { data: firstOrg } = await supabase.from('organisations').select('id').limit(1).single()
+    orgId = firstOrg?.id ?? null
+  }
 
-  const { data: org } = profile
+  const { data: org } = orgId
     ? await supabase
         .from('organisations')
         .select('id, name, industry, timezone, contact_email, contact_phone, subscription_plan, created_at')
-        .eq('id', profile.organisation_id)
+        .eq('id', orgId)
         .single()
     : { data: null }
 

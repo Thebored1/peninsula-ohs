@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getOrgId } from '@/lib/supabase/get-org-id'
 import { Tile, Button } from '@carbon/react'
 import { DataTableClient, type ColDef } from '@/components/table/DataTableClient'
 
@@ -14,12 +15,8 @@ function formatDate(iso: string | null | undefined): string {
 export default async function PpePage() {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('organisation_id')
-    .eq('id', user!.id)
-    .single()
+  const orgId = await getOrgId()
+  if (!orgId) return <div style={{ padding: '2rem' }}><p style={{ color: '#6f6f6f' }}>No organisation found.</p></div>
 
   // Fetch issuances joined with worker and ppe_item -> ppe_type
   const { data: issuances } = await supabase
@@ -29,7 +26,7 @@ export default async function PpePage() {
        worker:worker_id(id, first_name, last_name),
        ppe_item:ppe_item_id(id, brand, model, size, ppe_type:ppe_type_id(name))`
     )
-    .eq('organisation_id', profile!.organisation_id)
+    .eq('organisation_id', orgId)
     .order('created_at', { ascending: false })
 
   const rows = (issuances ?? []).map((r) => {

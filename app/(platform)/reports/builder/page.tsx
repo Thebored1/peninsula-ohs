@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getOrgId } from '@/lib/supabase/get-org-id'
 import { Grid, Column, Button, Tile, Tag } from '@carbon/react'
 import { Add } from '@carbon/icons-react'
 import Link from 'next/link'
@@ -22,17 +23,13 @@ const TYPE_COLORS: Record<string, 'blue' | 'teal' | 'purple' | 'magenta' | 'cyan
 export default async function ReportBuilderPage() {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('organisation_id')
-    .eq('id', user!.id)
-    .single()
+  const orgId = await getOrgId()
+  if (!orgId) return <div style={{ padding: '2rem' }}><p style={{ color: '#6f6f6f' }}>No organisation found.</p></div>
 
   const { data: reports } = await supabase
     .from('report_definitions')
     .select('id, name, description, report_type, is_active, created_at')
-    .eq('organisation_id', profile!.organisation_id)
+    .eq('organisation_id', orgId)
     .order('created_at', { ascending: false })
 
   return (

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getOrgId } from '@/lib/supabase/get-org-id'
 import { Tile, Tag, Button } from '@carbon/react'
 import { DataTableClient, type ColDef } from '@/components/table/DataTableClient'
 import type { TagType } from '@/components/table/DataTableClient'
@@ -70,14 +71,9 @@ const shiftColumns: ColDef[] = [
 
 export default async function FatiguePage() {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('organisation_id')
-    .eq('id', user!.id)
-    .single()
+
+  const orgId = await getOrgId()
+  if (!orgId) return <div style={{ padding: '2rem' }}><p style={{ color: '#6f6f6f' }}>No organisation found.</p></div>
 
   const [{ data: shiftLogs }, { data: alerts }] = await Promise.all([
     supabase
@@ -85,14 +81,14 @@ export default async function FatiguePage() {
       .select(
         'id, shift_date, shift_start, shift_end, hours_worked, shift_type, created_at, user_profiles!worker_id(first_name, last_name)'
       )
-      .eq('organisation_id', profile!.organisation_id)
+      .eq('organisation_id', orgId)
       .order('shift_date', { ascending: false }),
     supabase
       .from('fatigue_alerts')
       .select(
         'id, alert_type, actual_value, threshold_value, severity, status, created_at, user_profiles!worker_id(first_name, last_name)'
       )
-      .eq('organisation_id', profile!.organisation_id)
+      .eq('organisation_id', orgId)
       .eq('status', 'open')
       .order('created_at', { ascending: false }),
   ])

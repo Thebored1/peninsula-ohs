@@ -1,28 +1,25 @@
 import { createClient } from '@/lib/supabase/server'
+import { getOrgId } from '@/lib/supabase/get-org-id'
 import { Breadcrumb, BreadcrumbItem, Grid, Column } from '@carbon/react'
 import { PpeForm } from './PpeForm'
 
 export default async function NewPpePage() {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('organisation_id')
-    .eq('id', user!.id)
-    .single()
+  const orgId = await getOrgId()
+  if (!orgId) return <div style={{ padding: '2rem' }}><p style={{ color: '#6f6f6f' }}>No organisation found.</p></div>
 
   const [{ data: workers }, { data: ppeItems }] = await Promise.all([
     supabase
       .from('user_profiles')
       .select('id, first_name, last_name, job_title')
-      .eq('organisation_id', profile!.organisation_id)
+      .eq('organisation_id', orgId)
       .eq('is_active', true)
       .order('last_name', { ascending: true }),
     supabase
       .from('ppe_items')
       .select('id, brand, model, size, quantity_available, ppe_type:ppe_type_id(name)')
-      .eq('organisation_id', profile!.organisation_id)
+      .eq('organisation_id', orgId)
       .gt('quantity_available', 0)
       .order('created_at', { ascending: false }),
   ])

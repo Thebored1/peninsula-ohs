@@ -1,30 +1,26 @@
 import { createClient } from '@/lib/supabase/server'
+import { getOrgId } from '@/lib/supabase/get-org-id'
 import { Breadcrumb, BreadcrumbItem, Grid, Column } from '@carbon/react'
 import { FatigueForm } from './FatigueForm'
 import { logShift } from '@/app/actions/fatigue'
 
 export default async function NewShiftLogPage() {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('organisation_id')
-    .eq('id', user!.id)
-    .single()
+
+  const orgId = await getOrgId()
+  if (!orgId) return <div style={{ padding: '2rem' }}><p style={{ color: '#6f6f6f' }}>No organisation found.</p></div>
 
   const [{ data: workers }, { data: sites }] = await Promise.all([
     supabase
       .from('user_profiles')
       .select('id, first_name, last_name')
-      .eq('organisation_id', profile!.organisation_id)
+      .eq('organisation_id', orgId)
       .eq('is_active', true)
       .order('last_name'),
     supabase
       .from('sites')
       .select('id, name')
-      .eq('organisation_id', profile!.organisation_id)
+      .eq('organisation_id', orgId)
       .eq('is_active', true)
       .order('name'),
   ])

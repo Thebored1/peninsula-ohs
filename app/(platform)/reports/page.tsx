@@ -34,13 +34,15 @@ export default async function ReportsPage() {
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('organisation_id')
-    .eq('id', user!.id)
-    .single()
-
-  const orgId = profile!.organisation_id
+  let orgId: string
+  if (user) {
+    const { data: profile } = await supabase.from('user_profiles').select('organisation_id').eq('id', user.id).single()
+    orgId = profile!.organisation_id
+  } else {
+    const { data: firstOrg } = await supabase.from('organisations').select('id').limit(1).single()
+    if (!firstOrg) return <div style={{ padding: '2rem' }}><p>No organisation found.</p></div>
+    orgId = firstOrg.id
+  }
 
   const months = lastNMonths(6)
   const sixMonthsAgo = months[0].start.toISOString()

@@ -1,28 +1,25 @@
 import { createClient } from '@/lib/supabase/server'
+import { getOrgId } from '@/lib/supabase/get-org-id'
 import { Breadcrumb, BreadcrumbItem, Grid, Column } from '@carbon/react'
 import { WellbeingResourceForm } from './WellbeingResourceForm'
 
 export default async function NewWellbeingResourcePage() {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('organisation_id')
-    .eq('id', user!.id)
-    .single()
+  const orgId = await getOrgId()
+  if (!orgId) return <div style={{ padding: '2rem' }}><p style={{ color: '#6f6f6f' }}>No organisation found.</p></div>
 
   const [{ data: sites }, { data: departments }] = await Promise.all([
     supabase
       .from('sites')
       .select('id, name')
-      .eq('organisation_id', profile!.organisation_id)
+      .eq('organisation_id', orgId)
       .eq('is_active', true)
       .order('name'),
     supabase
       .from('departments')
       .select('id, name')
-      .eq('organisation_id', profile!.organisation_id)
+      .eq('organisation_id', orgId)
       .order('name'),
   ])
 

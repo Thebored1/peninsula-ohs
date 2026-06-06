@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getOrgId } from '@/lib/supabase/get-org-id'
 import { Tile, Button } from '@carbon/react'
 import { DataTableClient, type ColDef } from '@/components/table/DataTableClient'
 
@@ -18,23 +19,19 @@ function truncate(text: string, maxLen = 80) {
 export default async function SpeakUpPage() {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('organisation_id')
-    .eq('id', user!.id)
-    .single()
+  const orgId = await getOrgId()
+  if (!orgId) return <div style={{ padding: '2rem' }}><p style={{ color: '#6f6f6f' }}>No organisation found.</p></div>
 
   const [{ data: reports }, { data: categories }] = await Promise.all([
     supabase
       .from('speak_up_reports')
       .select('id, report_number, category_id, description, severity, status, created_at, speak_up_categories(name)')
-      .eq('organisation_id', profile!.organisation_id)
+      .eq('organisation_id', orgId)
       .order('created_at', { ascending: false }),
     supabase
       .from('speak_up_categories')
       .select('id, name')
-      .eq('organisation_id', profile!.organisation_id)
+      .eq('organisation_id', orgId)
       .eq('is_active', true)
       .order('name', { ascending: true }),
   ])

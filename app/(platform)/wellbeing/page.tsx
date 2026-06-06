@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getOrgId } from '@/lib/supabase/get-org-id'
 import { Tile, Button, Tag, Grid, Column } from '@carbon/react'
 import { Add } from '@carbon/icons-react'
 import Link from 'next/link'
@@ -73,31 +74,25 @@ const resourceColumns: ColDef[] = [
 export default async function WellbeingPage() {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('organisation_id')
-    .eq('id', user!.id)
-    .single()
+  const orgId = await getOrgId()
+  if (!orgId) return <div style={{ padding: '2rem' }}><p style={{ color: '#6f6f6f' }}>No organisation found.</p></div>
 
   const [{ data: resources }, { data: checkIns }, { data: programs }] = await Promise.all([
     supabase
       .from('wellbeing_resources')
       .select('id, title, resource_type, contact_name, contact_phone, is_active')
-      .eq('organisation_id', profile!.organisation_id)
+      .eq('organisation_id', orgId)
       .order('created_at', { ascending: false }),
     supabase
       .from('wellbeing_check_ins')
       .select('id, check_in_date, mood_score, stress_level, energy_level, workload_rating, support_requested')
-      .eq('organisation_id', profile!.organisation_id)
+      .eq('organisation_id', orgId)
       .order('check_in_date', { ascending: false })
       .limit(90),
     supabase
       .from('wellbeing_programs')
       .select('id, title, program_type, status, start_date, end_date')
-      .eq('organisation_id', profile!.organisation_id)
+      .eq('organisation_id', orgId)
       .order('created_at', { ascending: false }),
   ])
 

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getOrgId } from '@/lib/supabase/get-org-id'
 import { Tile, Tag, Button } from '@carbon/react'
 import { DataTableClient, type ColDef } from '@/components/table/DataTableClient'
 import Link from 'next/link'
@@ -13,17 +14,13 @@ function formatDate(iso: string | null) {
 export default async function LotoPage() {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('organisation_id')
-    .eq('id', user!.id)
-    .single()
+  const orgId = await getOrgId()
+  if (!orgId) return <div style={{ padding: '2rem' }}><p style={{ color: '#6f6f6f' }}>No organisation found.</p></div>
 
   const { data: procedures } = await supabase
     .from('loto_procedures')
     .select('id, procedure_number, title, asset_description, status, created_at')
-    .eq('organisation_id', profile!.organisation_id)
+    .eq('organisation_id', orgId)
     .order('created_at', { ascending: false })
 
   const rows = (procedures ?? []).map(p => ({

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getOrgId } from '@/lib/supabase/get-org-id'
 import { Tile, Button } from '@carbon/react'
 import { Add } from '@carbon/icons-react'
 import Link from 'next/link'
@@ -7,17 +8,13 @@ import { DataTableClient, type ColDef } from '@/components/table/DataTableClient
 export default async function ComplianceCalendarPage() {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('organisation_id')
-    .eq('id', user!.id)
-    .single()
+  const orgId = await getOrgId()
+  if (!orgId) return <div style={{ padding: '2rem' }}><p style={{ color: '#6f6f6f' }}>No organisation found.</p></div>
 
   const { data } = await supabase
     .from('compliance_obligations')
     .select('id, title, regulatory_body, standard_reference, frequency, next_due_date, status, is_critical')
-    .eq('organisation_id', profile!.organisation_id)
+    .eq('organisation_id', orgId)
     .order('next_due_date', { ascending: true })
 
   const rows = (data ?? []).map((r) => ({
