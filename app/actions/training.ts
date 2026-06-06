@@ -229,3 +229,54 @@ export async function completeInduction(
   revalidatePath('/training/inductions')
   return {}
 }
+
+// ─── Course Modules ────────────────────────────────────────────────────────
+
+export async function addCourseModule(formData: FormData): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  const orgId = await getOrgId()
+  if (!orgId) return { error: 'No organisation found' }
+
+  const courseId = (formData.get('course_id') as string)?.trim()
+  if (!courseId) return { error: 'Course ID is required' }
+
+  const title = (formData.get('title') as string)?.trim()
+  if (!title) return { error: 'Module title is required' }
+
+  // Auto-increment module_number from current max + 1
+  const { data: existing } = await supabase
+    .from('training_course_modules')
+    .select('module_number')
+    .eq('course_id', courseId)
+    .order('module_number', { ascending: false })
+    .limit(1)
+    .single()
+
+  const moduleNumber = existing ? existing.module_number + 1 : 1
+
+  const description = (formData.get('description') as string)?.trim() || null
+  const contentType = (formData.get('content_type') as string)?.trim() || null
+  const contentUrl = (formData.get('content_url') as string)?.trim() || null
+  const durationMinutesRaw = formData.get('duration_minutes') as string
+  const isMandatory = formData.get('is_mandatory') !== 'false'
+
+  const { error } = await supabase.from('training_course_modules').insert({
+    course_id: courseId,
+    organisation_id: orgId,
+    module_number: moduleNumber,
+    title,
+    description,
+    content_type: contentType,
+    content_url: contentUrl,
+    duration_minutes: durationMinutesRaw ? parseInt(durationMinutesRaw, 10) : null,
+    is_mandatory: isMandatory,
+  })
+
+  if (error) return { error: error.message }
+
+  revalidatePath(`/training/courses/${courseId}`)
+  redirect(`/training/courses/${courseId}`)
+}

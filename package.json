@@ -9,13 +9,14 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@carbon/icons-react": "^11.55.0",
+    "@carbon/react": "^1.71.0",
+    "@supabase/ssr": "^0.6.0",
+    "@supabase/supabase-js": "^2.49.0",
+    "jspdf": "^2.5.2",
     "next": "^15.3.3",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "@carbon/react": "^1.71.0",
-    "@carbon/icons-react": "^11.55.0",
-    "@supabase/supabase-js": "^2.49.0",
-    "@supabase/ssr": "^0.6.0"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

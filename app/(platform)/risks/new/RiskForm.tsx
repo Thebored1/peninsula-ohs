@@ -45,6 +45,7 @@ interface Props {
   likelihoodLevels: LevelOption[]
   consequenceLevels: LevelOption[]
   users: UserOption[]
+  defaultValues?: Record<string, unknown>
 }
 
 const HIERARCHY_OPTIONS = [
@@ -76,17 +77,25 @@ function getUserLabel(u: UserOption): string {
 let _rowCounter = 0
 function nextId() { return String(++_rowCounter) }
 
-export default function RiskForm({ categories, likelihoodLevels, consequenceLevels, users }: Props) {
+export default function RiskForm({ categories, likelihoodLevels, consequenceLevels, users, defaultValues }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
-  // Inherent risk
-  const [likelihood, setLikelihood] = useState<number>(0)
-  const [consequence, setConsequence] = useState<number>(0)
+  // Inherent risk — initialise from defaultValues if provided
+  const [likelihood, setLikelihood] = useState<number>(() =>
+    defaultValues?.inherent_likelihood ? Number(defaultValues.inherent_likelihood) : 0
+  )
+  const [consequence, setConsequence] = useState<number>(() =>
+    defaultValues?.inherent_consequence ? Number(defaultValues.inherent_consequence) : 0
+  )
 
-  // Residual risk
-  const [residualLikelihood, setResidualLikelihood] = useState<number>(0)
-  const [residualConsequence, setResidualConsequence] = useState<number>(0)
+  // Residual risk — initialise from defaultValues if provided
+  const [residualLikelihood, setResidualLikelihood] = useState<number>(() =>
+    defaultValues?.residual_likelihood ? Number(defaultValues.residual_likelihood) : 0
+  )
+  const [residualConsequence, setResidualConsequence] = useState<number>(() =>
+    defaultValues?.residual_consequence ? Number(defaultValues.residual_consequence) : 0
+  )
 
   // Dynamic control rows
   const [controls, setControls] = useState<ControlRow[]>([])
@@ -165,6 +174,7 @@ export default function RiskForm({ categories, likelihoodLevels, consequenceLeve
                       name="title"
                       labelText="Risk Title *"
                       placeholder="e.g. Working at height — roof access"
+                      defaultValue={defaultValues?.title as string | undefined}
                       required
                     />
                   </Column>
@@ -173,7 +183,7 @@ export default function RiskForm({ categories, likelihoodLevels, consequenceLeve
                       id="category_id"
                       name="category_id"
                       labelText="Category *"
-                      defaultValue=""
+                      defaultValue={(defaultValues?.category_id as string | undefined) ?? ''}
                       required
                     >
                       <SelectItem value="" text="Select a category" />
@@ -210,6 +220,7 @@ export default function RiskForm({ categories, likelihoodLevels, consequenceLeve
                       labelText="Hazard Description *"
                       placeholder="Describe the hazard, potential causes, and how harm could occur..."
                       rows={4}
+                      defaultValue={defaultValues?.hazard_description as string | undefined}
                       required
                     />
                   </Column>
@@ -220,6 +231,7 @@ export default function RiskForm({ categories, likelihoodLevels, consequenceLeve
                       labelText="People at Risk"
                       placeholder="e.g. Workers, Visitors, Contractors"
                       helperText="Comma-separated, e.g. Workers, Visitors, Contractors"
+                      defaultValue={defaultValues?.people_at_risk as string | undefined}
                     />
                   </Column>
                 </Grid>
@@ -241,7 +253,7 @@ export default function RiskForm({ categories, likelihoodLevels, consequenceLeve
                       id="likelihood_score"
                       name="likelihood_score"
                       labelText="Likelihood *"
-                      defaultValue=""
+                      defaultValue={defaultValues?.inherent_likelihood ? String(defaultValues.inherent_likelihood) : ''}
                       required
                       onChange={(e) => setLikelihood(parseInt(e.target.value, 10) || 0)}
                     >
@@ -260,7 +272,7 @@ export default function RiskForm({ categories, likelihoodLevels, consequenceLeve
                       id="consequence_score"
                       name="consequence_score"
                       labelText="Consequence *"
-                      defaultValue=""
+                      defaultValue={defaultValues?.inherent_consequence ? String(defaultValues.inherent_consequence) : ''}
                       required
                       onChange={(e) => setConsequence(parseInt(e.target.value, 10) || 0)}
                     >
@@ -443,7 +455,7 @@ export default function RiskForm({ categories, likelihoodLevels, consequenceLeve
                       id="residual_likelihood"
                       name="residual_likelihood"
                       labelText="Residual Likelihood"
-                      defaultValue=""
+                      defaultValue={defaultValues?.residual_likelihood ? String(defaultValues.residual_likelihood) : ''}
                       onChange={(e) => setResidualLikelihood(parseInt(e.target.value, 10) || 0)}
                     >
                       <SelectItem value="" text="Select likelihood" />
@@ -459,7 +471,7 @@ export default function RiskForm({ categories, likelihoodLevels, consequenceLeve
                       id="residual_consequence"
                       name="residual_consequence"
                       labelText="Residual Consequence"
-                      defaultValue=""
+                      defaultValue={defaultValues?.residual_consequence ? String(defaultValues.residual_consequence) : ''}
                       onChange={(e) => setResidualConsequence(parseInt(e.target.value, 10) || 0)}
                     >
                       <SelectItem value="" text="Select consequence" />
@@ -538,6 +550,7 @@ export default function RiskForm({ categories, likelihoodLevels, consequenceLeve
                       labelText="Existing Controls Summary"
                       placeholder="Describe the existing controls currently in place to manage this risk..."
                       rows={3}
+                      defaultValue={defaultValues?.controls_description as string | undefined}
                     />
                   </Column>
                   <Column sm={4} md={4} lg={8} style={{ marginBottom: '1rem' }}>

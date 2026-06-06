@@ -5,6 +5,7 @@ import {
   Grid, Column, Tile, Button, TextInput, TextArea, Select, SelectItem,
   Form, InlineNotification,
 } from '@carbon/react'
+import { createClient } from '@/lib/supabase/client'
 import { createTrainingRecord } from '@/app/actions/training'
 
 interface Worker { id: string; first_name: string; last_name: string }
@@ -41,10 +42,24 @@ export function TrainingRecordForm({ workers, courses }: Props) {
     }
   }
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
     const formData = new FormData(e.currentTarget)
+
+    const fileInput = e.currentTarget.querySelector('input[data-upload="true"]') as HTMLInputElement
+    const file = fileInput?.files?.[0]
+    if (file) {
+      const supabase = createClient()
+      const ext = file.name.split('.').pop() ?? 'bin'
+      const uploadPath = crypto.randomUUID() + '.' + ext
+      const { data: upload, error: uploadErr } = await supabase.storage.from('certificates').upload(uploadPath, file, { upsert: true })
+      if (uploadErr) { setError('File upload failed: ' + uploadErr.message); return }
+      const { data: { publicUrl } } = supabase.storage.from('certificates').getPublicUrl(upload.path)
+      formData.set('certificate_file_url', publicUrl)
+      formData.set('certificate_file_name', file.name)
+    }
+
     startTransition(async () => {
       const result = await createTrainingRecord(formData)
       if (result?.error) setError(result.error)
@@ -146,6 +161,26 @@ export function TrainingRecordForm({ workers, courses }: Props) {
                     <TextArea id="notes" name="notes" labelText="Notes" rows={3} />
                   </Column>
                 </Grid>
+              </div>
+            </Tile>
+
+            <Tile style={{ padding: 0, marginBottom: '1rem' }}>
+              <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e0e0e0' }}>
+                <h2 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#161616' }}>Certificate</h2>
+              </div>
+              <div style={{ padding: '1.5rem' }}>
+                <p style={{ fontSize: '0.875rem', color: '#6f6f6f', marginBottom: '1rem' }}>
+                  Optionally attach a scanned certificate or completion letter.
+                </p>
+                <p style={{ fontSize: '0.875rem', color: '#161616', marginBottom: '0.5rem' }}>
+                  Upload Certificate (PDF, JPG, PNG)
+                </p>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  data-upload="true"
+                  style={{ display: 'block', marginBottom: '1rem' }}
+                />
               </div>
             </Tile>
 

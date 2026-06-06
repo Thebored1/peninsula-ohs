@@ -307,11 +307,12 @@ export function AppShell({ children, userEmail }: AppShellProps) {
             </SideNavMenuItem>
             <SideNavMenuItem
               href="/risks"
-              isActive={isActive('/risks')}
+              isActive={pathname === '/risks'}
               element={Link}
             >
               Risk Register
             </SideNavMenuItem>
+            <SideNavMenuItem href="/risks/templates" isActive={isActive('/risks/templates')} element={Link}>Risk Templates</SideNavMenuItem>
             <SideNavMenuItem
               href="/actions"
               isActive={isActive('/actions')}
@@ -546,6 +547,13 @@ export function AppShell({ children, userEmail }: AppShellProps) {
               element={Link}
             >
               Document Settings
+            </SideNavMenuItem>
+            <SideNavMenuItem
+              href="/settings/notifications"
+              isActive={isActive('/settings/notifications')}
+              element={Link}
+            >
+              Notifications
             </SideNavMenuItem>
           </SideNavMenu>
         </SideNavItems>

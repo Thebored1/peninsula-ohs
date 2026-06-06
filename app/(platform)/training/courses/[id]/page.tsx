@@ -3,6 +3,24 @@ import { notFound } from 'next/navigation'
 import { Breadcrumb, BreadcrumbItem, Grid, Column, Tile, Tag } from '@carbon/react'
 import Link from 'next/link'
 
+const MODULE_TYPE_LABELS: Record<string, string> = {
+  document: 'Document',
+  video: 'Video',
+  quiz: 'Quiz',
+  checklist: 'Checklist',
+  external_url: 'External URL',
+  reading: 'Reading',
+}
+
+const MODULE_TYPE_COLOURS: Record<string, 'blue' | 'teal' | 'cyan' | 'purple' | 'gray' | 'green'> = {
+  document: 'blue',
+  video: 'teal',
+  quiz: 'cyan',
+  checklist: 'green',
+  external_url: 'purple',
+  reading: 'gray',
+}
+
 interface PageProps { params: Promise<{ id: string }> }
 
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -60,6 +78,14 @@ export default async function CourseDetailPage({ params }: PageProps) {
     .from('training_needs_matrix')
     .select('id', { count: 'exact', head: true })
     .eq('course_id', id)
+
+  const { data: modules } = await supabase
+    .from('training_course_modules')
+    .select('id, module_number, title, description, content_type, content_url, duration_minutes, is_mandatory')
+    .eq('course_id', id)
+    .order('module_number')
+
+  const isSystem = !course.organisation_id
 
   function statusColour(status: string): 'green' | 'teal' | 'red' {
     if (status === 'expired') return 'red'
@@ -192,6 +218,86 @@ export default async function CourseDetailPage({ params }: PageProps) {
           </Tile>
         </Column>
       </Grid>
+
+      <Tile style={{ padding: 0, marginTop: '1rem' }}>
+        <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h2 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#161616' }}>Course Modules</h2>
+          {isSystem ? (
+            <span style={{ fontSize: '0.75rem', color: '#6f6f6f', fontStyle: 'italic' }}>
+              System course — modules cannot be edited
+            </span>
+          ) : (
+            <Link href={`/training/courses/${id}/modules/new`} style={{ fontSize: '0.875rem', color: '#0f62fe', textDecoration: 'none' }}>
+              Add Module
+            </Link>
+          )}
+        </div>
+        {!modules || modules.length === 0 ? (
+          <div style={{ padding: '2rem', textAlign: 'center', fontSize: '0.875rem', color: '#6f6f6f' }}>
+            No modules defined for this course
+          </div>
+        ) : (
+          <ol style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+            {modules.map((mod, i) => (
+              <li
+                key={mod.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '1rem',
+                  padding: '1rem 1.5rem',
+                  borderBottom: i < modules.length - 1 ? '1px solid #f4f4f4' : 'none',
+                }}
+              >
+                <span style={{
+                  flexShrink: 0,
+                  width: '2rem',
+                  height: '2rem',
+                  borderRadius: '50%',
+                  backgroundColor: '#0f62fe',
+                  color: '#fff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                }}>
+                  {mod.module_number}
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.25rem' }}>
+                    <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#161616' }}>{mod.title}</span>
+                    {mod.content_type && (
+                      <Tag type={MODULE_TYPE_COLOURS[mod.content_type] ?? 'gray'} size="sm">
+                        {MODULE_TYPE_LABELS[mod.content_type] ?? mod.content_type}
+                      </Tag>
+                    )}
+                    {!mod.is_mandatory && (
+                      <Tag type="gray" size="sm">Optional</Tag>
+                    )}
+                    {mod.duration_minutes && (
+                      <span style={{ fontSize: '0.75rem', color: '#6f6f6f' }}>{mod.duration_minutes} min</span>
+                    )}
+                  </div>
+                  {mod.description && (
+                    <p style={{ fontSize: '0.8125rem', color: '#525252', lineHeight: 1.5, margin: 0 }}>{mod.description}</p>
+                  )}
+                  {mod.content_url && (
+                    <a
+                      href={mod.content_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ fontSize: '0.75rem', color: '#0f62fe', textDecoration: 'none', marginTop: '0.25rem', display: 'inline-block' }}
+                    >
+                      Open content ↗
+                    </a>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
+      </Tile>
     </div>
   )
 }

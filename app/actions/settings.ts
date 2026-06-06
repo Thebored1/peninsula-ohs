@@ -26,6 +26,8 @@ export async function updateOrganisation(formData: FormData): Promise<{ error?: 
       timezone: (formData.get('timezone') as string) || 'UTC',
       contact_email: (formData.get('contact_email') as string)?.trim() || null,
       contact_phone: (formData.get('contact_phone') as string)?.trim() || null,
+      province: (formData.get('province') as string)?.trim() || null,
+      country_code: (formData.get('country_code') as string)?.trim() || 'CA',
       updated_at: new Date().toISOString(),
     })
     .eq('id', profile.organisation_id)
@@ -136,5 +138,39 @@ export async function cancelInvitation(id: string): Promise<{ error?: string }> 
   if (error) return { error: error.message }
 
   revalidatePath('/settings/users')
+  return {}
+}
+
+export async function updateNotificationRule(
+  id: string,
+  isActive: boolean,
+): Promise<{ error?: string }> {
+  if (!id) return { error: 'Rule ID is required.' }
+
+  const { getOrgId } = await import('@/lib/supabase/get-org-id')
+  const orgId = await getOrgId()
+  if (!orgId) return { error: 'Not authenticated.' }
+
+  const supabase = await createClient()
+
+  // Verify the rule belongs to this organisation before updating
+  const { data: rule, error: fetchError } = await supabase
+    .from('notification_rules')
+    .select('id')
+    .eq('id', id)
+    .eq('organisation_id', orgId)
+    .maybeSingle()
+
+  if (fetchError) return { error: fetchError.message }
+  if (!rule) return { error: 'Notification rule not found or access denied.' }
+
+  const { error } = await supabase
+    .from('notification_rules')
+    .update({ is_active: isActive, updated_at: new Date().toISOString() })
+    .eq('id', id)
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/settings/notifications')
   return {}
 }

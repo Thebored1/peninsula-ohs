@@ -19,7 +19,7 @@ export default async function OrganisationSettingsPage() {
   const { data: org } = orgId
     ? await supabase
         .from('organisations')
-        .select('id, name, industry, timezone, contact_email, contact_phone, subscription_plan, created_at')
+        .select('id, name, industry, timezone, contact_email, contact_phone, province, subscription_plan, created_at')
         .eq('id', orgId)
         .single()
     : { data: null }

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { Breadcrumb, BreadcrumbItem, Grid, Column, Tile, Tag } from '@carbon/react'
 import Link from 'next/link'
+import { CertificateButton } from '@/components/training/CertificateButton'
 
 interface PageProps { params: Promise<{ id: string }> }
 
@@ -37,6 +38,13 @@ export default async function TrainingRecordDetailPage({ params }: PageProps) {
 
   if (!record) notFound()
 
+  // Fetch organisation name for the certificate
+  const { data: org } = await supabase
+    .from('organisations')
+    .select('name')
+    .eq('id', record.organisation_id)
+    .single()
+
   const workerRaw = record.user_profiles
   const courseRaw = record.training_courses
   const worker = Array.isArray(workerRaw)
@@ -69,9 +77,21 @@ export default async function TrainingRecordDetailPage({ params }: PageProps) {
             {worker ? `${worker.first_name} ${worker.last_name}` : '—'} — {course?.name ?? '—'}
           </p>
         </div>
-        <Tag type={statusTag(record.status)} size="md">
-          {record.status.replace(/_/g, ' ')}
-        </Tag>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {(record.status === 'current' || record.status === 'expiring_soon') && worker && course && (
+            <CertificateButton
+              workerName={`${worker.first_name} ${worker.last_name}`}
+              courseName={course.name}
+              completedDate={formatDate(record.completed_date)}
+              expiryDate={record.expiry_date ? formatDate(record.expiry_date) : null}
+              recordNumber={record.record_number ?? id}
+              orgName={org?.name ?? 'Peninsula OHS'}
+            />
+          )}
+          <Tag type={statusTag(record.status)} size="md">
+            {record.status.replace(/_/g, ' ')}
+          </Tag>
+        </div>
       </div>
 
       <Grid condensed>
