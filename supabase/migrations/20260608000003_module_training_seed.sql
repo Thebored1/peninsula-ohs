@@ -1,0 +1,2 @@
+-- Training & Competency Management — Seed
+-- No global seed data needed; courses are org-specific

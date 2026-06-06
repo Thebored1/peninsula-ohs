@@ -37,6 +37,8 @@ import {
   UserAvatar,
   Asset,
   Construction,
+  Education,
+  Alarm,
 } from '@carbon/icons-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -325,6 +327,7 @@ export function AppShell({ children, userEmail }: AppShellProps) {
               Investigations
             </SideNavMenuItem>
             <SideNavMenuItem href="/jsa" isActive={isActive('/jsa')} element={Link}>JSA / JHA</SideNavMenuItem>
+            <SideNavMenuItem href="/toolbox" isActive={isActive('/toolbox')} element={Link}>Toolbox Talks</SideNavMenuItem>
             <SideNavMenuItem href="/speak-up" isActive={isActive('/speak-up')} element={Link}>Speak-Up Reports</SideNavMenuItem>
           </SideNavMenu>
 
@@ -403,6 +406,18 @@ export function AppShell({ children, userEmail }: AppShellProps) {
           </SideNavMenu>
 
           <SideNavMenu
+            title="Training"
+            renderIcon={Education}
+            isActive={isActive('/training')}
+            defaultExpanded={isActive('/training')}
+          >
+            <SideNavMenuItem href="/training" isActive={pathname === '/training'} element={Link}>Overview</SideNavMenuItem>
+            <SideNavMenuItem href="/training/courses" isActive={isActive('/training/courses')} element={Link}>Course Library</SideNavMenuItem>
+            <SideNavMenuItem href="/training/records" isActive={isActive('/training/records')} element={Link}>Training Records</SideNavMenuItem>
+            <SideNavMenuItem href="/training/inductions" isActive={isActive('/training/inductions')} element={Link}>Induction Programs</SideNavMenuItem>
+          </SideNavMenu>
+
+          <SideNavMenu
             title="Environment"
             renderIcon={Earth}
             isActive={isActive('/environment') || isActive('/env-reporting')}
@@ -424,6 +439,35 @@ export function AppShell({ children, userEmail }: AppShellProps) {
             </SideNavMenuItem>
           </SideNavMenu>
 
+          <SideNavMenu
+            title="Contractors"
+            renderIcon={Construction}
+            isActive={isActive('/contractors')}
+            defaultExpanded={isActive('/contractors')}
+          >
+            <SideNavMenuItem
+              href="/contractors"
+              isActive={pathname === '/contractors'}
+              element={Link}
+            >
+              Companies
+            </SideNavMenuItem>
+            <SideNavMenuItem
+              href="/contractors/workers"
+              isActive={isActive('/contractors/workers')}
+              element={Link}
+            >
+              Workers
+            </SideNavMenuItem>
+            <SideNavMenuItem
+              href="/contractors/access-log"
+              isActive={isActive('/contractors/access-log')}
+              element={Link}
+            >
+              Site Access Log
+            </SideNavMenuItem>
+          </SideNavMenu>
+
           <SideNavLink
             href="/chemicals"
             renderIcon={Chemistry}
@@ -441,6 +485,20 @@ export function AppShell({ children, userEmail }: AppShellProps) {
           >
             Documents
           </SideNavLink>
+
+          <SideNavMenu
+            title="Emergency"
+            renderIcon={Alarm}
+            isActive={isActive('/emergency')}
+            defaultExpanded={isActive('/emergency')}
+          >
+            <SideNavMenuItem href="/emergency" isActive={pathname === '/emergency'} element={Link}>Overview</SideNavMenuItem>
+            <SideNavMenuItem href="/emergency/plans" isActive={isActive('/emergency/plans')} element={Link}>Response Plans</SideNavMenuItem>
+            <SideNavMenuItem href="/emergency/drills" isActive={isActive('/emergency/drills')} element={Link}>Drills</SideNavMenuItem>
+            <SideNavMenuItem href="/emergency/wardens" isActive={isActive('/emergency/wardens')} element={Link}>Wardens</SideNavMenuItem>
+            <SideNavMenuItem href="/emergency/muster-points" isActive={isActive('/emergency/muster-points')} element={Link}>Muster Points</SideNavMenuItem>
+            <SideNavMenuItem href="/emergency/activations" isActive={isActive('/emergency/activations')} element={Link}>Activations</SideNavMenuItem>
+          </SideNavMenu>
 
           <SideNavMenu title="Reports & KPIs" renderIcon={Analytics} isActive={isActive('/reports')} defaultExpanded={isActive('/reports')}>
             <SideNavMenuItem href="/reports" isActive={pathname === '/reports'} element={Link}>KPI Dashboard</SideNavMenuItem>
