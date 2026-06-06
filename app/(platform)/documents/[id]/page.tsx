@@ -177,30 +177,36 @@ export default async function DocumentDetailPage({ params }: PageProps) {
   }
 
   // Org signature method + current user roles
+  // Dev bypass: when no user session, fetch org via service role and use first profile as dev user
   let signatureMethod: 'draw' | 'type' | 'either' = 'either'
   let currentUserRoleIds: string[] = []
   let orgUsers: { id: string; first_name: string; last_name: string }[] = []
   let orgRoles: { id: string; name: string }[] = []
+  let devUserId: string | null = null
 
-  if (user) {
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('organisation_id')
-      .eq('id', user.id)
-      .single()
-
-    if (profile) {
-      const [{ data: org }, { data: userRoles }, { data: users }, { data: roles }] = await Promise.all([
-        supabase.from('organisations').select('required_signature_method').eq('id', profile.organisation_id).single(),
-        supabase.from('user_roles').select('role_id').eq('user_id', user.id),
-        supabase.from('user_profiles').select('id, first_name, last_name').eq('organisation_id', profile.organisation_id).eq('is_active', true).order('first_name'),
-        supabase.from('roles').select('id, name').eq('organisation_id', profile.organisation_id).order('name'),
-      ])
-      signatureMethod = ((org as { required_signature_method?: string } | null)?.required_signature_method ?? 'either') as 'draw' | 'type' | 'either'
-      currentUserRoleIds = (userRoles ?? []).map((r) => r.role_id)
-      orgUsers = users ?? []
-      orgRoles = roles ?? []
+  const orgId = await (async () => {
+    if (user) {
+      const { data: p } = await supabase.from('user_profiles').select('organisation_id').eq('id', user.id).single()
+      return p?.organisation_id ?? null
     }
+    const { data: first } = await supabase.from('user_profiles').select('id, organisation_id').limit(1).single()
+    if (first) { devUserId = first.id; return first.organisation_id }
+    return null
+  })()
+
+  const effectiveUserId = user?.id ?? devUserId ?? ''
+
+  if (orgId) {
+    const [{ data: org }, { data: userRoles }, { data: users }, { data: roles }] = await Promise.all([
+      supabase.from('organisations').select('required_signature_method').eq('id', orgId).single(),
+      supabase.from('user_roles').select('role_id').eq('user_id', effectiveUserId),
+      supabase.from('user_profiles').select('id, first_name, last_name').eq('organisation_id', orgId).eq('is_active', true).order('first_name'),
+      supabase.from('roles').select('id, name').eq('organisation_id', orgId).order('name'),
+    ])
+    signatureMethod = ((org as { required_signature_method?: string } | null)?.required_signature_method ?? 'either') as 'draw' | 'type' | 'either'
+    currentUserRoleIds = (userRoles ?? []).map((r) => r.role_id)
+    orgUsers = users ?? []
+    orgRoles = roles ?? []
   }
 
   const typeRaw = doc.document_types
@@ -211,7 +217,8 @@ export default async function DocumentDetailPage({ params }: PageProps) {
     : (statusRaw as { name: string; colour_code: string; is_live: boolean; code: string } | null)
 
   const displayVersion = doc.version_number ?? doc.version ?? '1.0'
-  const isOwner = user ? doc.owner_id === user.id : false
+  // In dev mode (no user), treat as owner so all action buttons appear
+  const isOwner = user ? doc.owner_id === user.id : true
 
   return (
     <div style={{ padding: '2rem' }}>
