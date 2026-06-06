@@ -47,6 +47,9 @@ export async function createPermit(formData: FormData): Promise<{ error?: string
     .limit(1)
     .maybeSingle()
 
+  const isolationRequirements = formData.get('isolation_requirements') as string | null
+  const preWorkChecklistCompleted = formData.get('pre_work_checklist_completed') === 'true'
+
   const { data: permit, error } = await supabase
     .from('permits')
     .insert({
@@ -62,14 +65,100 @@ export async function createPermit(formData: FormData): Promise<{ error?: string
       applicant_id: user.id,
       responsible_person_id: responsiblePersonId || null,
       created_by: user.id,
+      isolation_requirements: isolationRequirements?.trim() || null,
+      pre_work_checklist_completed: preWorkChecklistCompleted,
     })
     .select('id')
     .single()
 
   if (error) return { error: error.message }
 
+  const permitId = permit.id
+
+  // Insert hazards
+  const hazardsRaw = formData.get('hazards') as string | null
+  if (hazardsRaw) {
+    try {
+      const hazards = JSON.parse(hazardsRaw) as Array<{ description: string; riskLevel: string }>
+      const validHazards = hazards.filter(h => h.description?.trim())
+      if (validHazards.length > 0) {
+        await supabase.from('permit_hazards').insert(
+          validHazards.map(h => ({
+            permit_id: permitId,
+            organisation_id: profile.organisation_id,
+            hazard_description: h.description.trim(),
+            created_by: user.id,
+          }))
+        )
+      }
+    } catch { /* ignore parse errors */ }
+  }
+
+  // Insert control measures
+  const controlsRaw = formData.get('controls') as string | null
+  if (controlsRaw) {
+    try {
+      const controls = JSON.parse(controlsRaw) as Array<{ description: string; type: string }>
+      const validControls = controls.filter(c => c.description?.trim())
+      if (validControls.length > 0) {
+        // Map form control types to DB constraint values
+        const typeMap: Record<string, string> = {
+          elimination: 'eliminate', substitution: 'substitute',
+          engineering: 'engineer', administrative: 'admin', ppe: 'ppe',
+        }
+        await supabase.from('permit_control_measures').insert(
+          validControls.map(c => ({
+            permit_id: permitId,
+            organisation_id: profile.organisation_id,
+            control_type: typeMap[c.type] ?? 'admin',
+            description: c.description.trim(),
+            is_verified: false,
+          }))
+        )
+      }
+    } catch { /* ignore parse errors */ }
+  }
+
+  // Insert workers
+  const workersRaw = formData.get('workers') as string | null
+  if (workersRaw) {
+    try {
+      const workers = JSON.parse(workersRaw) as Array<{ workerId: string; workerName: string; role: string }>
+      const validWorkers = workers.filter(w => w.workerName?.trim())
+      if (validWorkers.length > 0) {
+        await supabase.from('permit_workers').insert(
+          validWorkers.map(w => ({
+            permit_id: permitId,
+            organisation_id: profile.organisation_id,
+            full_name: w.workerName.trim(),
+            role_on_job: w.role?.trim() || null,
+            induction_verified: false,
+          }))
+        )
+      }
+    } catch { /* ignore parse errors */ }
+  }
+
+  // Insert default approval chain: Supervisor Review → HSE Officer Approval
+  await supabase.from('permit_approvals').insert([
+    {
+      permit_id: permitId,
+      organisation_id: profile.organisation_id,
+      order_index: 0,
+      step_name: 'Supervisor Review',
+      decision: 'pending',
+    },
+    {
+      permit_id: permitId,
+      organisation_id: profile.organisation_id,
+      order_index: 1,
+      step_name: 'HSE Officer Approval',
+      decision: 'pending',
+    },
+  ])
+
   revalidatePath('/permits')
-  redirect(`/permits/${permit.id}`)
+  redirect(`/permits/${permitId}`)
 }
 
 export async function updatePermitStatus(
@@ -393,6 +482,29 @@ export async function addPermitApprovalStep(formData: FormData): Promise<{ error
 
   revalidatePath(`/permits/${permitId}`)
   return {}
+}
+
+/**
+ * Simple permit-level approve — marks the next pending approval step as approved
+ * on behalf of the current user, then advances the permit to 'approved' if all steps done.
+ */
+export async function approvePermit(permitId: string, comments?: string): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  const { data: pending } = await supabase
+    .from('permit_approvals')
+    .select('id')
+    .eq('permit_id', permitId)
+    .eq('decision', 'pending')
+    .order('order_index')
+    .limit(1)
+    .maybeSingle()
+
+  if (!pending) return { error: 'No pending approval steps found' }
+
+  return approvePermitStep(permitId, pending.id, comments ?? '')
 }
 
 export async function deletePermit(id: string): Promise<{ error?: string }> {

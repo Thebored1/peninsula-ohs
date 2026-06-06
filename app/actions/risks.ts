@@ -51,6 +51,13 @@ export async function createRisk(formData: FormData): Promise<{ error?: string }
   const review_frequency = formData.get('review_frequency')?.toString() || 'quarterly'
   const notes = formData.get('notes')?.toString().trim() || null
 
+  // New fields
+  const risk_owner_id = formData.get('risk_owner_id')?.toString().trim() || null
+  const residual_likelihood_str = formData.get('residual_likelihood')?.toString()
+  const residual_consequence_str = formData.get('residual_consequence')?.toString()
+  const residual_likelihood = residual_likelihood_str ? parseInt(residual_likelihood_str, 10) || null : null
+  const residual_consequence = residual_consequence_str ? parseInt(residual_consequence_str, 10) || null : null
+
   const { data: risk, error: insertError } = await supabase
     .from('risks')
     .insert({
@@ -68,11 +75,37 @@ export async function createRisk(formData: FormData): Promise<{ error?: string }
       status: 'active',
       source_type: 'standalone',
       created_by: user.id,
+      ...(risk_owner_id ? { risk_owner_id } : {}),
+      ...(residual_likelihood != null ? { residual_likelihood } : {}),
+      ...(residual_consequence != null ? { residual_consequence } : {}),
     })
     .select('id')
     .single()
 
   if (insertError) return { error: insertError.message }
+
+  // Insert control rows if any
+  const controlsCount = parseInt(formData.get('controls_count')?.toString() ?? '0', 10)
+  if (controlsCount > 0) {
+    const controlRows = []
+    for (let i = 0; i < controlsCount; i++) {
+      const description = formData.get(`control_description_${i}`)?.toString().trim()
+      if (!description) continue
+      controlRows.push({
+        risk_id: risk.id,
+        organisation_id: profile.organisation_id,
+        description,
+        control_type: formData.get(`control_type_${i}`)?.toString() || 'preventive',
+        control_hierarchy: formData.get(`control_hierarchy_${i}`)?.toString() || 'administrative',
+        is_implemented: false,
+        created_by: user.id,
+      })
+    }
+    if (controlRows.length > 0) {
+      const { error: controlError } = await supabase.from('risk_controls').insert(controlRows)
+      if (controlError) return { error: `Risk saved but controls failed: ${controlError.message}` }
+    }
+  }
 
   revalidatePath('/risks')
   redirect(`/risks/${risk.id}`)
@@ -103,6 +136,13 @@ export async function updateRisk(id: string, formData: FormData): Promise<{ erro
   const people_at_risk_raw = formData.get('people_at_risk')?.toString().trim()
   const people_at_risk = people_at_risk_raw ? people_at_risk_raw.split(',').map((s) => s.trim()).filter(Boolean) : []
 
+  // New fields
+  const risk_owner_id = formData.get('risk_owner_id')?.toString().trim() || null
+  const residual_likelihood_str = formData.get('residual_likelihood')?.toString()
+  const residual_consequence_str = formData.get('residual_consequence')?.toString()
+  const residual_likelihood = residual_likelihood_str ? parseInt(residual_likelihood_str, 10) || null : null
+  const residual_consequence = residual_consequence_str ? parseInt(residual_consequence_str, 10) || null : null
+
   const { error } = await supabase
     .from('risks')
     .update({
@@ -117,6 +157,9 @@ export async function updateRisk(id: string, formData: FormData): Promise<{ erro
       review_frequency: formData.get('review_frequency')?.toString() || 'quarterly',
       notes: formData.get('notes')?.toString().trim() || null,
       updated_at: new Date().toISOString(),
+      risk_owner_id,
+      residual_likelihood,
+      residual_consequence,
     })
     .eq('id', id)
 
@@ -242,5 +285,63 @@ export async function reviewRisk(
 
   revalidatePath(`/risks/${id}`)
   revalidatePath('/risks')
+  return {}
+}
+
+export async function linkIncidentToRisk(formData: FormData): Promise<{ error?: string }> {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('organisation_id')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile) return { error: 'User profile not found' }
+
+  const risk_id = formData.get('risk_id')?.toString().trim()
+  const incident_ref = formData.get('incident_ref')?.toString().trim()
+
+  if (!risk_id) return { error: 'Risk ID is required' }
+  if (!incident_ref) return { error: 'Incident number or ID is required' }
+
+  // Try to find the incident by incident_number or id
+  const { data: incident } = await supabase
+    .from('incidents')
+    .select('id, incident_number')
+    .or(`incident_number.eq.${incident_ref},id.eq.${incident_ref}`)
+    .eq('organisation_id', profile.organisation_id)
+    .limit(1)
+    .single()
+
+  if (!incident) return { error: `Incident "${incident_ref}" not found` }
+
+  // Check for duplicate link
+  const { data: existing } = await supabase
+    .from('risk_linked_incidents')
+    .select('id')
+    .eq('risk_id', risk_id)
+    .eq('incident_id', incident.id)
+    .limit(1)
+    .single()
+
+  if (existing) return { error: 'This incident is already linked to the risk' }
+
+  const { error: insertError } = await supabase
+    .from('risk_linked_incidents')
+    .insert({
+      risk_id,
+      incident_id: incident.id,
+      organisation_id: profile.organisation_id,
+      link_type: 'related',
+      created_by: user.id,
+    })
+
+  if (insertError) return { error: insertError.message }
+
+  revalidatePath(`/risks/${risk_id}`)
   return {}
 }

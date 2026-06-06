@@ -1,0 +1,14 @@
+ALTER TABLE chemicals ADD COLUMN IF NOT EXISTS supplier_name TEXT;
+ALTER TABLE chemicals ADD COLUMN IF NOT EXISTS manufacturer_name TEXT;
+ALTER TABLE chemicals ADD COLUMN IF NOT EXISTS exposure_standard_twa NUMERIC;
+ALTER TABLE chemicals ADD COLUMN IF NOT EXISTS exposure_standard_stel NUMERIC;
+ALTER TABLE chemicals ADD COLUMN IF NOT EXISTS exposure_standard_unit TEXT DEFAULT 'ppm';
+ALTER TABLE chemicals ADD COLUMN IF NOT EXISTS emergency_first_aid TEXT;
+ALTER TABLE chemicals ADD COLUMN IF NOT EXISTS emergency_spill TEXT;
+ALTER TABLE chemicals ADD COLUMN IF NOT EXISTS emergency_fire TEXT;
+ALTER TABLE chemicals ADD COLUMN IF NOT EXISTS sds_file_url TEXT;
+ALTER TABLE chemicals ADD COLUMN IF NOT EXISTS sds_file_name TEXT;
+ALTER TABLE chemicals ADD COLUMN IF NOT EXISTS sds_review_date DATE;
+ALTER TABLE chemicals ADD COLUMN IF NOT EXISTS sds_issue_date DATE;
+ALTER TABLE chemicals ADD COLUMN IF NOT EXISTS current_quantity NUMERIC;
+ALTER TABLE chemicals ADD COLUMN IF NOT EXISTS storage_location TEXT;

@@ -6,10 +6,24 @@ import { createDocument } from '@/app/actions/documents'
 export default async function NewDocumentPage() {
   const supabase = await createClient()
 
-  const [{ data: docTypes }, { data: docStatuses }] = await Promise.all([
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const [{ data: docTypes }, { data: docStatuses }, { data: profile }] = await Promise.all([
     supabase.from('document_types').select('id, name').eq('is_active', true).order('display_order'),
     supabase.from('document_statuses').select('id, name').eq('is_active', true).order('display_order'),
+    user
+      ? supabase.from('user_profiles').select('organisation_id').eq('id', user.id).single()
+      : Promise.resolve({ data: null }),
   ])
+
+  const { data: users } = profile?.organisation_id
+    ? await supabase
+        .from('user_profiles')
+        .select('id, first_name, last_name')
+        .eq('organisation_id', profile.organisation_id)
+        .eq('is_active', true)
+        .order('first_name')
+    : { data: [] }
 
   return (
     <div style={{ padding: '2rem' }}>
@@ -24,7 +38,12 @@ export default async function NewDocumentPage() {
           </div>
         </Column>
       </Grid>
-      <DocumentForm docTypes={docTypes ?? []} docStatuses={docStatuses ?? []} action={createDocument} />
+      <DocumentForm
+        docTypes={docTypes ?? []}
+        docStatuses={docStatuses ?? []}
+        users={users ?? []}
+        action={createDocument}
+      />
     </div>
   )
 }

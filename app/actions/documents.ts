@@ -23,6 +23,14 @@ export async function createDocument(formData: FormData): Promise<{ error?: stri
   const statusId = formData.get('status_id') as string | null
   const description = formData.get('description') as string | null
   const reviewDueDate = formData.get('review_due_date') as string | null
+  const fileUrl = formData.get('file_url') as string | null
+  const fileName = formData.get('file_name') as string | null
+  const fileSizeRaw = formData.get('file_size_bytes') as string | null
+  const fileMimeType = formData.get('file_mime_type') as string | null
+  const versionNumber = (formData.get('version_number') as string | null)?.trim() || '1.0'
+  const ownerId = (formData.get('owner_id') as string | null) || null
+  const requiresAck = formData.get('requires_acknowledgement') === 'true'
+  const expiryDate = (formData.get('expiry_date') as string | null) || null
 
   // Get the draft status if no status provided
   let resolvedStatusId = statusId || null
@@ -44,8 +52,16 @@ export async function createDocument(formData: FormData): Promise<{ error?: stri
       status_id: resolvedStatusId,
       description: description?.trim() || null,
       review_due_date: reviewDueDate || null,
-      version: '1.0',
+      version: versionNumber,
       created_by: user.id,
+      file_url: fileUrl || null,
+      file_name: fileName || null,
+      file_size_bytes: fileSizeRaw ? parseInt(fileSizeRaw, 10) : null,
+      file_mime_type: fileMimeType || null,
+      version_number: versionNumber,
+      owner_id: ownerId,
+      requires_acknowledgement: requiresAck,
+      expiry_date: expiryDate,
     })
     .select('id')
     .single()
@@ -64,17 +80,39 @@ export async function updateDocument(id: string, formData: FormData): Promise<{ 
   const title = formData.get('title') as string
   if (!title?.trim()) return { error: 'Title is required' }
 
+  const versionNumber = (formData.get('version_number') as string | null)?.trim() || '1.0'
+  const ownerId = (formData.get('owner_id') as string | null) || null
+  const requiresAck = formData.get('requires_acknowledgement') === 'true'
+  const expiryDate = (formData.get('expiry_date') as string | null) || null
+  const fileUrl = formData.get('file_url') as string | null
+  const fileName = formData.get('file_name') as string | null
+  const fileSizeRaw = formData.get('file_size_bytes') as string | null
+  const fileMimeType = formData.get('file_mime_type') as string | null
+
+  const updatePayload: Record<string, unknown> = {
+    title: title.trim(),
+    document_type_id: (formData.get('document_type_id') as string | null) || null,
+    status_id: (formData.get('status_id') as string | null) || null,
+    description: (formData.get('description') as string | null)?.trim() || null,
+    review_due_date: (formData.get('review_due_date') as string | null) || null,
+    version: versionNumber,
+    version_number: versionNumber,
+    owner_id: ownerId,
+    requires_acknowledgement: requiresAck,
+    expiry_date: expiryDate,
+    updated_at: new Date().toISOString(),
+  }
+
+  if (fileUrl) {
+    updatePayload.file_url = fileUrl
+    updatePayload.file_name = fileName || null
+    updatePayload.file_size_bytes = fileSizeRaw ? parseInt(fileSizeRaw, 10) : null
+    updatePayload.file_mime_type = fileMimeType || null
+  }
+
   const { error } = await supabase
     .from('documents')
-    .update({
-      title: title.trim(),
-      document_type_id: (formData.get('document_type_id') as string | null) || null,
-      status_id: (formData.get('status_id') as string | null) || null,
-      description: (formData.get('description') as string | null)?.trim() || null,
-      review_due_date: (formData.get('review_due_date') as string | null) || null,
-      version: (formData.get('version') as string | null)?.trim() || '1.0',
-      updated_at: new Date().toISOString(),
-    })
+    .update(updatePayload)
     .eq('id', id)
 
   if (error) return { error: error.message }

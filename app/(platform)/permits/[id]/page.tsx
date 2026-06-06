@@ -52,6 +52,7 @@ export default async function PermitDetailPage({ params }: PageProps) {
       post_work_check_required, post_work_check_completed,
       work_completed_at, site_cleared_at, created_at,
       applicant_id, responsible_person_id, risk_id,
+      isolation_requirements, pre_work_checklist_completed,
       permit_types(name, code, rescue_plan_required, isolation_required),
       permit_statuses(name, colour_code, code, is_active_work, is_terminal)
     `)
@@ -172,9 +173,9 @@ export default async function PermitDetailPage({ params }: PageProps) {
               <Button type="submit" kind={nextTransition.kind} size="sm">{nextTransition.label}</Button>
             </form>
           )}
-          {statusCode === 'site_cleared' && (
+          {(statusCode === 'site_cleared' || statusCode === 'active') && (
             <form action={handleClose}>
-              <input type="hidden" name="closure_notes" value="Permit closed after site clearance." />
+              <input type="hidden" name="closure_notes" value="Permit closed." />
               <Button type="submit" kind="primary" size="sm">Close Permit</Button>
             </form>
           )}
@@ -214,12 +215,24 @@ export default async function PermitDetailPage({ params }: PageProps) {
                   </DetailRow>
                 </Column>
               </Grid>
+              <Column sm={4} md={4} lg={8}>
+                <DetailRow label="Pre-Work Checklist">
+                  {(permit as unknown as { pre_work_checklist_completed?: boolean }).pre_work_checklist_completed
+                    ? <Tag type="green" size="sm">Completed</Tag>
+                    : <Tag type="warm-gray" size="sm">Pending</Tag>}
+                </DetailRow>
+              </Column>
               <div style={{ marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px solid #e0e0e0' }}>
                 <DetailRow label="Work Description">
                   <p style={{ lineHeight: 1.6 }}>{permit.work_description}</p>
                 </DetailRow>
               </div>
               {permit.rescue_plan && <DetailRow label="Rescue Plan"><p style={{ lineHeight: 1.6 }}>{permit.rescue_plan}</p></DetailRow>}
+              {(permit as unknown as { isolation_requirements?: string }).isolation_requirements && (
+                <DetailRow label="Isolation Requirements">
+                  <p style={{ lineHeight: 1.6 }}>{(permit as unknown as { isolation_requirements: string }).isolation_requirements}</p>
+                </DetailRow>
+              )}
             </div>
           </Tile>
 
@@ -506,7 +519,7 @@ export default async function PermitDetailPage({ params }: PageProps) {
           </Tile>
 
           {/* Closure section */}
-          {['site_cleared'].includes(statusCode) && (
+          {['site_cleared', 'active'].includes(statusCode) && (
             <Tile style={{ padding: '1.5rem', marginBottom: '1rem' }}>
               <h2 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#161616', marginBottom: '1rem' }}>Close Permit</h2>
               <form action={handleClose}>

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { Grid, Column, Tile, Tag, Breadcrumb, BreadcrumbItem } from '@carbon/react'
+import LinkIncidentForm from './LinkIncidentForm'
 
 function formatDate(iso: string | null | undefined) {
   if (!iso) return '—'
@@ -20,6 +21,14 @@ function getRiskLevelStyles(level: string | null): { bg: string; color: string }
     case 'critical': return { bg: 'rgba(218,30,40,0.15)',  color: '#da1e28' }
     default:         return { bg: '#f4f4f4',               color: '#525252' }
   }
+}
+
+function scoreToLevel(score: number | null): string | null {
+  if (score == null) return null
+  if (score <= 4)  return 'low'
+  if (score <= 9)  return 'medium'
+  if (score <= 16) return 'high'
+  return 'critical'
 }
 
 function RiskLevelPill({ level }: { level: string | null }) {
@@ -115,6 +124,22 @@ function DetailRow({ label, value }: DetailRowProps) {
   )
 }
 
+const HIERARCHY_LABELS: Record<string, string> = {
+  elimination:    'Elimination',
+  substitution:   'Substitution',
+  engineering:    'Engineering',
+  administrative: 'Administrative',
+  ppe:            'PPE',
+}
+
+const HIERARCHY_COLORS: Record<string, { bg: string; color: string }> = {
+  elimination:    { bg: 'rgba(36,161,72,0.12)',   color: '#1a7a38' },
+  substitution:   { bg: 'rgba(0,115,198,0.10)',   color: '#0073c6' },
+  engineering:    { bg: 'rgba(100,56,182,0.10)',   color: '#6438b6' },
+  administrative: { bg: 'rgba(241,194,27,0.15)',  color: '#8a6800' },
+  ppe:            { bg: 'rgba(218,30,40,0.10)',   color: '#a81620' },
+}
+
 export default async function RiskDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
@@ -127,7 +152,8 @@ export default async function RiskDetailPage({ params }: { params: Promise<{ id:
       inherent_risk_score, inherent_risk_level,
       residual_likelihood_score, residual_consequence_score,
       residual_risk_score, residual_risk_level,
-      existing_controls_summary, owner_id, review_frequency,
+      residual_likelihood, residual_consequence,
+      existing_controls_summary, owner_id, risk_owner_id, review_frequency,
       next_review_date, last_reviewed_at, status, source_type, notes,
       created_at, updated_at,
       risk_categories(name),
@@ -138,12 +164,28 @@ export default async function RiskDetailPage({ params }: { params: Promise<{ id:
 
   if (!risk) notFound()
 
-  // Fetch risk controls
+  // Fetch risk controls (including hierarchy)
   const { data: controls } = await supabase
     .from('risk_controls')
-    .select('id, control_type, description, is_implemented, assigned_to')
+    .select('id, control_type, control_hierarchy, description, is_implemented, assigned_to')
     .eq('risk_id', id)
     .order('created_at', { ascending: true })
+
+  // Fetch risk owner profile (risk_owner_id — the dedicated owner field)
+  let riskOwnerName = '—'
+  const riskOwnerId = (risk as Record<string, unknown>).risk_owner_id as string | null
+  if (riskOwnerId) {
+    const { data: ownerProfile } = await supabase
+      .from('user_profiles')
+      .select('first_name, last_name, display_name')
+      .eq('id', riskOwnerId)
+      .single()
+    if (ownerProfile) {
+      riskOwnerName = ownerProfile.display_name ||
+        `${ownerProfile.first_name ?? ''} ${ownerProfile.last_name ?? ''}`.trim() ||
+        '—'
+    }
+  }
 
   // Fetch linked incidents
   const { data: linkedIncidents } = await supabase
@@ -153,14 +195,29 @@ export default async function RiskDetailPage({ params }: { params: Promise<{ id:
 
   const categoryRaw = risk.risk_categories as { name: string } | { name: string }[] | null
   const category = (Array.isArray(categoryRaw) ? categoryRaw[0]?.name : (categoryRaw as { name: string } | null)?.name) ?? '—'
+
+  // Fallback owner from owner_id FK (legacy)
   const ownerRaw = risk.user_profiles as { first_name?: string; last_name?: string; display_name?: string } | { first_name?: string; last_name?: string; display_name?: string }[] | null
   const ownerProfile = Array.isArray(ownerRaw) ? (ownerRaw[0] ?? null) : ownerRaw
-  const ownerName = ownerProfile
+  const legacyOwnerName = ownerProfile
     ? (ownerProfile.display_name || `${ownerProfile.first_name ?? ''} ${ownerProfile.last_name ?? ''}`.trim())
-    : '—'
+    : null
 
-  const hasResidual =
-    risk.residual_likelihood_score != null && risk.residual_consequence_score != null
+  const displayOwnerName = riskOwnerName !== '—' ? riskOwnerName : (legacyOwnerName ?? '—')
+
+  // Residual risk — prefer dedicated columns, fall back to residual_risk_score/level
+  const residualLikelihood = (risk as Record<string, unknown>).residual_likelihood as number | null
+    ?? risk.residual_likelihood_score
+  const residualConsequence = (risk as Record<string, unknown>).residual_consequence as number | null
+    ?? risk.residual_consequence_score
+  const computedResidualScore = residualLikelihood != null && residualConsequence != null
+    ? residualLikelihood * residualConsequence
+    : risk.residual_risk_score
+  const computedResidualLevel = computedResidualScore != null
+    ? (scoreToLevel(computedResidualScore) ?? risk.residual_risk_level)
+    : risk.residual_risk_level
+
+  const hasResidual = residualLikelihood != null && residualConsequence != null
 
   return (
     <div style={{ padding: '2rem' }}>
@@ -181,11 +238,21 @@ export default async function RiskDetailPage({ params }: { params: Promise<{ id:
               {risk.status.replace(/_/g, ' ')}
             </Tag>
             <RiskLevelPill level={risk.inherent_risk_level} />
+            {hasResidual && computedResidualLevel && (
+              <span style={{ fontSize: '0.75rem', color: '#525252' }}>
+                Residual: <RiskLevelPill level={computedResidualLevel} />
+              </span>
+            )}
           </div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 400, color: '#161616' }}>{risk.title}</h1>
           <p style={{ fontSize: '0.75rem', color: '#6f6f6f', marginTop: '0.25rem' }}>
             Created {formatDate(risk.created_at)} · Last updated {formatDateTime(risk.updated_at)}
           </p>
+          {displayOwnerName !== '—' && (
+            <p style={{ fontSize: '0.75rem', color: '#525252', marginTop: '0.25rem' }}>
+              Owner: <strong>{displayOwnerName}</strong>
+            </p>
+          )}
         </div>
         <a href={`/risks/${id}/edit`} style={{ fontSize: '0.875rem', color: '#0f62fe', textDecoration: 'none', whiteSpace: 'nowrap', marginTop: '0.5rem' }}>
           Edit
@@ -211,13 +278,37 @@ export default async function RiskDetailPage({ params }: { params: Promise<{ id:
               {hasResidual && (
                 <RiskScoreCard
                   label="Residual Risk (After Controls)"
-                  likelihood={risk.residual_likelihood_score}
-                  consequence={risk.residual_consequence_score}
-                  score={risk.residual_risk_score}
-                  level={risk.residual_risk_level}
+                  likelihood={residualLikelihood}
+                  consequence={residualConsequence}
+                  score={computedResidualScore}
+                  level={computedResidualLevel}
                 />
               )}
             </div>
+            {hasResidual && risk.inherent_risk_score != null && computedResidualScore != null && (
+              <div style={{
+                padding: '0.75rem 1.5rem',
+                borderTop: '1px solid #e0e0e0',
+                backgroundColor: '#f4f4f4',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                fontSize: '0.875rem',
+              }}>
+                <span style={{ color: '#525252' }}>Risk reduction:</span>
+                {computedResidualScore < risk.inherent_risk_score ? (
+                  <span style={{ fontWeight: 600, color: '#24a148' }}>
+                    ▼ {risk.inherent_risk_score - computedResidualScore} pts ({Math.round((1 - computedResidualScore / risk.inherent_risk_score) * 100)}% reduction)
+                  </span>
+                ) : computedResidualScore === risk.inherent_risk_score ? (
+                  <span style={{ fontWeight: 600, color: '#525252' }}>No change</span>
+                ) : (
+                  <span style={{ fontWeight: 600, color: '#da1e28' }}>
+                    ▲ {computedResidualScore - risk.inherent_risk_score} pts (increased)
+                  </span>
+                )}
+              </div>
+            )}
           </Tile>
 
           {/* Hazard Description */}
@@ -258,41 +349,58 @@ export default async function RiskDetailPage({ params }: { params: Promise<{ id:
               </div>
             ) : (
               <div>
-                {(controls ?? []).map((ctrl, i) => (
-                  <div
-                    key={ctrl.id}
-                    style={{
-                      padding: '1rem 1.5rem',
-                      borderBottom: i < (controls ?? []).length - 1 ? '1px solid #e0e0e0' : 'none',
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '1rem',
-                    }}
-                  >
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                        <span style={{
-                          display: 'inline-block',
-                          padding: '0.125rem 0.5rem',
-                          borderRadius: '2px',
-                          backgroundColor: '#f4f4f4',
-                          color: '#525252',
-                          fontSize: '0.75rem',
-                          fontWeight: 600,
-                          textTransform: 'capitalize',
-                        }}>
-                          {ctrl.control_type?.replace(/_/g, ' ') ?? 'Control'}
-                        </span>
-                        {ctrl.is_implemented ? (
-                          <span style={{ fontSize: '0.75rem', color: '#24a148', fontWeight: 600 }}>Implemented</span>
-                        ) : (
-                          <span style={{ fontSize: '0.75rem', color: '#da1e28', fontWeight: 600 }}>Not Implemented</span>
-                        )}
+                {(controls ?? []).map((ctrl, i) => {
+                  const hierarchyKey = ctrl.control_hierarchy ?? ''
+                  const hierarchyStyle = HIERARCHY_COLORS[hierarchyKey] ?? { bg: '#f4f4f4', color: '#525252' }
+                  return (
+                    <div
+                      key={ctrl.id}
+                      style={{
+                        padding: '1rem 1.5rem',
+                        borderBottom: i < (controls ?? []).length - 1 ? '1px solid #e0e0e0' : 'none',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '1rem',
+                      }}
+                    >
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem', flexWrap: 'wrap' }}>
+                          <span style={{
+                            display: 'inline-block',
+                            padding: '0.125rem 0.5rem',
+                            borderRadius: '2px',
+                            backgroundColor: '#f4f4f4',
+                            color: '#525252',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            textTransform: 'capitalize',
+                          }}>
+                            {ctrl.control_type?.replace(/_/g, ' ') ?? 'Control'}
+                          </span>
+                          {ctrl.control_hierarchy && (
+                            <span style={{
+                              display: 'inline-block',
+                              padding: '0.125rem 0.5rem',
+                              borderRadius: '2px',
+                              backgroundColor: hierarchyStyle.bg,
+                              color: hierarchyStyle.color,
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                            }}>
+                              {HIERARCHY_LABELS[ctrl.control_hierarchy] ?? ctrl.control_hierarchy}
+                            </span>
+                          )}
+                          {ctrl.is_implemented ? (
+                            <span style={{ fontSize: '0.75rem', color: '#24a148', fontWeight: 600 }}>Implemented</span>
+                          ) : (
+                            <span style={{ fontSize: '0.75rem', color: '#da1e28', fontWeight: 600 }}>Not Implemented</span>
+                          )}
+                        </div>
+                        <p style={{ fontSize: '0.875rem', color: '#161616' }}>{ctrl.description}</p>
                       </div>
-                      <p style={{ fontSize: '0.875rem', color: '#161616' }}>{ctrl.description}</p>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </Tile>
@@ -304,7 +412,7 @@ export default async function RiskDetailPage({ params }: { params: Promise<{ id:
               <span style={{ fontSize: '0.75rem', color: '#6f6f6f' }}>{(linkedIncidents ?? []).length} linked</span>
             </div>
             {(linkedIncidents ?? []).length === 0 ? (
-              <div style={{ padding: '2rem 1.5rem', textAlign: 'center', color: '#6f6f6f', fontSize: '0.875rem' }}>
+              <div style={{ padding: '1.5rem 1.5rem 0', textAlign: 'center', color: '#6f6f6f', fontSize: '0.875rem' }}>
                 No incidents linked to this risk
               </div>
             ) : (
@@ -347,6 +455,13 @@ export default async function RiskDetailPage({ params }: { params: Promise<{ id:
                 })}
               </div>
             )}
+            {/* Link Incident inline form */}
+            <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid #e0e0e0', backgroundColor: '#f4f4f4' }}>
+              <p style={{ fontSize: '0.75rem', fontWeight: 600, color: '#525252', marginBottom: '0.5rem' }}>
+                Link an Incident
+              </p>
+              <LinkIncidentForm riskId={id} />
+            </div>
           </Tile>
 
           {/* Notes */}
@@ -381,7 +496,7 @@ export default async function RiskDetailPage({ params }: { params: Promise<{ id:
                     : '—'
                 }
               />
-              <DetailRow label="Owner" value={ownerName} />
+              <DetailRow label="Risk Owner" value={displayOwnerName} />
               <DetailRow
                 label="Review Frequency"
                 value={<span style={{ textTransform: 'capitalize' }}>{risk.review_frequency}</span>}
@@ -391,6 +506,38 @@ export default async function RiskDetailPage({ params }: { params: Promise<{ id:
               <DetailRow label="Source Type" value={<span style={{ textTransform: 'capitalize' }}>{risk.source_type.replace(/_/g, ' ')}</span>} />
             </div>
           </Tile>
+
+          {/* Residual Risk Summary card in sidebar */}
+          {hasResidual && computedResidualScore != null && (
+            <Tile style={{ padding: 0, marginBottom: '1rem' }}>
+              <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e0e0e0' }}>
+                <h2 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#161616' }}>Residual Risk</h2>
+              </div>
+              <div style={{ padding: '1rem 1.5rem' }}>
+                {(() => {
+                  const { bg, color } = getRiskLevelStyles(computedResidualLevel)
+                  return (
+                    <div style={{
+                      padding: '1rem',
+                      backgroundColor: bg,
+                      borderRadius: '2px',
+                      border: `1px solid ${color}44`,
+                      textAlign: 'center',
+                    }}>
+                      <p style={{ fontSize: '0.75rem', color: '#525252', marginBottom: '0.5rem' }}>Score after controls</p>
+                      <p style={{ fontSize: '2.5rem', fontWeight: 300, color, lineHeight: 1, marginBottom: '0.5rem' }}>
+                        {computedResidualScore}
+                      </p>
+                      <RiskLevelPill level={computedResidualLevel} />
+                      <p style={{ fontSize: '0.75rem', color: '#525252', marginTop: '0.5rem' }}>
+                        {residualLikelihood} likelihood × {residualConsequence} consequence
+                      </p>
+                    </div>
+                  )
+                })()}
+              </div>
+            </Tile>
+          )}
         </Column>
       </Grid>
     </div>

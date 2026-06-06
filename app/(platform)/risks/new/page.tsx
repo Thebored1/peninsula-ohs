@@ -1,11 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
+import { getOrgId } from '@/lib/supabase/get-org-id'
 import { Breadcrumb, BreadcrumbItem, Grid, Column } from '@carbon/react'
 import RiskForm from './RiskForm'
 
 export default async function NewRiskPage() {
   const supabase = await createClient()
+  const orgId = await getOrgId()
 
-  const [categoriesResult, likelihoodResult, consequenceResult] = await Promise.all([
+  const [categoriesResult, likelihoodResult, consequenceResult, usersResult] = await Promise.all([
     supabase
       .from('risk_categories')
       .select('id, name')
@@ -21,11 +23,20 @@ export default async function NewRiskPage() {
       .select('level_number, name, description')
       .eq('is_active', true)
       .order('level_number', { ascending: true }),
+    orgId
+      ? supabase
+          .from('user_profiles')
+          .select('id, first_name, last_name, display_name')
+          .eq('organisation_id', orgId)
+          .eq('is_active', true)
+          .order('first_name', { ascending: true })
+      : Promise.resolve({ data: [] }),
   ])
 
   const categories = categoriesResult.data ?? []
   const likelihoodLevels = likelihoodResult.data ?? []
   const consequenceLevels = consequenceResult.data ?? []
+  const users = (usersResult.data ?? []) as { id: string; first_name: string | null; last_name: string | null; display_name: string | null }[]
 
   return (
     <div style={{ padding: '2rem' }}>
@@ -47,6 +58,7 @@ export default async function NewRiskPage() {
         categories={categories}
         likelihoodLevels={likelihoodLevels}
         consequenceLevels={consequenceLevels}
+        users={users}
       />
     </div>
   )

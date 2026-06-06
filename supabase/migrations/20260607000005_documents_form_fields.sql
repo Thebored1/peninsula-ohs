@@ -1,0 +1,8 @@
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS file_url TEXT;
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS file_name TEXT;
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS file_size_bytes BIGINT;
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS file_mime_type TEXT;
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS version_number TEXT DEFAULT '1.0';
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS owner_id UUID REFERENCES user_profiles(id);
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS requires_acknowledgement BOOLEAN DEFAULT false;
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS expiry_date DATE;

@@ -235,15 +235,46 @@ export default function ActionForm({ users }: Props) {
                     </div>
                   </Column>
 
-                  {/* Source Reference */}
+                  {/* Source Type + Source Reference */}
+                  <Column sm={4} md={4} lg={8}>
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <Select
+                        id="source_type"
+                        name="source_type"
+                        labelText="Source Type"
+                        defaultValue="standalone"
+                        disabled={submitting}
+                      >
+                        <SelectItem value="incident" text="Incident" />
+                        <SelectItem value="audit" text="Audit" />
+                        <SelectItem value="inspection" text="Inspection" />
+                        <SelectItem value="risk" text="Risk" />
+                        <SelectItem value="hazard" text="Hazard" />
+                        <SelectItem value="standalone" text="Standalone" />
+                      </Select>
+                    </div>
+                  </Column>
                   <Column sm={4} md={4} lg={8}>
                     <div style={{ marginBottom: '1.5rem' }}>
                       <TextInput
                         id="source_reference"
                         name="source_reference"
-                        labelText="Source Reference"
-                        helperText="Optional — e.g. INC-001, INS-042"
+                        labelText="Source Reference (optional)"
                         placeholder="e.g. INC-2026-00001"
+                        disabled={submitting}
+                      />
+                    </div>
+                  </Column>
+
+                  {/* Notes */}
+                  <Column sm={4} md={8} lg={16}>
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <TextArea
+                        id="notes"
+                        name="notes"
+                        labelText="Notes"
+                        placeholder="Additional notes or context…"
+                        rows={3}
                         disabled={submitting}
                       />
                     </div>

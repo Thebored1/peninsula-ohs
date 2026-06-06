@@ -11,7 +11,9 @@ export async function createAction(formData: FormData): Promise<{ error?: string
   const due_date = (formData.get('due_date') as string | null)?.trim() ?? ''
   const priority = (formData.get('priority') as string | null) ?? 'medium'
   const assigned_to = (formData.get('assigned_to') as string | null)?.trim() || null
+  const source_type = (formData.get('source_type') as string | null)?.trim() || 'standalone'
   const source_reference = (formData.get('source_reference') as string | null)?.trim() || null
+  const notes = (formData.get('notes') as string | null)?.trim() || null
   const verification_required = formData.get('verification_required') === 'true'
 
   if (!title) return { error: 'Title is required.' }
@@ -21,33 +23,45 @@ export async function createAction(formData: FormData): Promise<{ error?: string
 
   const supabase = await createClient()
   const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError || !user) return { error: 'Authentication required.' }
 
-  const { data: profile, error: profileError } = await supabase
-    .from('user_profiles')
-    .select('organisation_id')
-    .eq('id', user.id)
-    .single()
+  // Support unauthenticated dev mode — org lookup via getOrgId
+  let organisationId: string | null = null
+  let createdById: string | null = null
 
-  if (profileError || !profile) return { error: 'User profile not found.' }
+  if (!userError && user) {
+    createdById = user.id
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('organisation_id')
+      .eq('id', user.id)
+      .single()
+    if (profileError || !profile) return { error: 'User profile not found.' }
+    organisationId = profile.organisation_id
+  } else {
+    // Dev bypass
+    const { getOrgId } = await import('@/lib/supabase/get-org-id')
+    organisationId = await getOrgId()
+    if (!organisationId) return { error: 'No organisation found.' }
+  }
 
   const { data: action, error: insertError } = await supabase
     .from('actions')
     .insert({
-      organisation_id: profile.organisation_id,
+      organisation_id: organisationId,
       title,
       description,
       action_type,
       priority,
       due_date,
       assigned_to: assigned_to ?? undefined,
-      assigned_by: assigned_to ? user.id : undefined,
+      assigned_by: (assigned_to && createdById) ? createdById : undefined,
       assigned_at: assigned_to ? new Date().toISOString() : undefined,
       verification_required,
+      source_type,
       source_reference: source_reference ?? undefined,
-      source_type: 'standalone',
+      notes: notes ?? undefined,
       status: 'open',
-      created_by: user.id,
+      created_by: createdById ?? undefined,
     })
     .select('id')
     .single()

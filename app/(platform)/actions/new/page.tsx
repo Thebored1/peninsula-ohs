@@ -1,28 +1,23 @@
 import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { getOrgId } from '@/lib/supabase/get-org-id'
 import ActionForm from './ActionForm'
 
 export default async function NewActionPage() {
+  const orgId = await getOrgId()
+  if (!orgId) {
+    return (
+      <div style={{ padding: '2rem' }}>
+        <p style={{ color: '#6f6f6f' }}>No organisation found.</p>
+      </div>
+    )
+  }
+
   const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) redirect('/login')
-
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('organisation_id')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile) redirect('/login')
 
   const { data: users } = await supabase
     .from('user_profiles')
     .select('id, first_name, last_name')
-    .eq('organisation_id', profile.organisation_id)
+    .eq('organisation_id', orgId)
     .eq('is_active', true)
     .order('first_name', { ascending: true })
 

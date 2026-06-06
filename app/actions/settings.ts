@@ -67,3 +67,74 @@ export async function createSite(formData: FormData): Promise<{ error?: string }
   revalidatePath('/settings/sites')
   return {}
 }
+
+export async function inviteUser(formData: FormData): Promise<{ error?: string }> {
+  const email = (formData.get('email') as string | null)?.trim().toLowerCase() ?? ''
+  const role_id = (formData.get('role_id') as string | null)?.trim() || null
+
+  if (!email) return { error: 'Email is required.' }
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRe.test(email)) return { error: 'Please enter a valid email address.' }
+
+  const supabase = await createClient()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  let organisationId: string | null = null
+  let invitedById: string | null = null
+
+  if (!userError && user) {
+    invitedById = user.id
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('organisation_id')
+      .eq('id', user.id)
+      .single()
+    if (profileError || !profile) return { error: 'User profile not found.' }
+    organisationId = profile.organisation_id
+  } else {
+    const { getOrgId } = await import('@/lib/supabase/get-org-id')
+    organisationId = await getOrgId()
+    if (!organisationId) return { error: 'No organisation found.' }
+  }
+
+  // Check for an existing pending invitation for this email in this org
+  const { data: existing } = await supabase
+    .from('user_invitations')
+    .select('id')
+    .eq('organisation_id', organisationId)
+    .eq('email', email)
+    .eq('status', 'pending')
+    .maybeSingle()
+
+  if (existing) return { error: 'A pending invitation already exists for this email address.' }
+
+  const { error: insertError } = await supabase
+    .from('user_invitations')
+    .insert({
+      organisation_id: organisationId,
+      email,
+      role_id: role_id ?? undefined,
+      invited_by: invitedById ?? undefined,
+    })
+
+  if (insertError) return { error: insertError.message }
+
+  revalidatePath('/settings/users')
+  return {}
+}
+
+export async function cancelInvitation(id: string): Promise<{ error?: string }> {
+  if (!id) return { error: 'Invitation ID is required.' }
+
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('user_invitations')
+    .update({ status: 'cancelled' })
+    .eq('id', id)
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/settings/users')
+  return {}
+}

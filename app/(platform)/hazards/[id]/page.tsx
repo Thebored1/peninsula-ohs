@@ -69,6 +69,12 @@ export default async function HazardDetailPage({ params }: PageProps) {
       review_notes,
       action_taken,
       promoted_to_risk_id,
+      hazard_category,
+      observed_at,
+      immediate_risk_to_people,
+      suggested_control,
+      evidence_file_url,
+      evidence_file_name,
       user_profiles!reported_by(first_name, last_name)
     `)
     .eq('id', id)
@@ -210,6 +216,46 @@ export default async function HazardDetailPage({ params }: PageProps) {
                   </>
                 )}
 
+                {report.hazard_category && (
+                  <>
+                    <dt style={{ fontSize: '0.75rem', color: '#6f6f6f', letterSpacing: '0.32px' }}>
+                      Category
+                    </dt>
+                    <dd style={{ fontSize: '0.875rem', color: '#161616', margin: 0, textTransform: 'capitalize' }}>
+                      {report.hazard_category}
+                    </dd>
+                  </>
+                )}
+
+                {report.observed_at && (
+                  <>
+                    <dt style={{ fontSize: '0.75rem', color: '#6f6f6f', letterSpacing: '0.32px' }}>
+                      Observed On
+                    </dt>
+                    <dd style={{ fontSize: '0.875rem', color: '#161616', margin: 0 }}>
+                      {formatDate(report.observed_at)}
+                    </dd>
+                  </>
+                )}
+
+                <dt style={{ fontSize: '0.75rem', color: '#6f6f6f', letterSpacing: '0.32px' }}>
+                  Immediate Risk to People
+                </dt>
+                <dd style={{ fontSize: '0.875rem', color: '#161616', margin: 0 }}>
+                  {report.immediate_risk_to_people ? 'Yes' : 'No'}
+                </dd>
+
+                {report.suggested_control && (
+                  <>
+                    <dt style={{ fontSize: '0.75rem', color: '#6f6f6f', letterSpacing: '0.32px' }}>
+                      Suggested Control
+                    </dt>
+                    <dd style={{ fontSize: '0.875rem', color: '#161616', margin: 0 }}>
+                      {report.suggested_control}
+                    </dd>
+                  </>
+                )}
+
                 {report.action_taken && (
                   <>
                     <dt style={{ fontSize: '0.75rem', color: '#6f6f6f', letterSpacing: '0.32px' }}>
@@ -283,7 +329,7 @@ export default async function HazardDetailPage({ params }: PageProps) {
                 Evidence
               </h2>
             </div>
-            {evidence.length === 0 ? (
+            {evidence.length === 0 && !report.evidence_file_url ? (
               <div
                 style={{
                   padding: '2rem 1.5rem',
@@ -296,6 +342,30 @@ export default async function HazardDetailPage({ params }: PageProps) {
               </div>
             ) : (
               <div>
+                {/* Inline evidence uploaded via the report form */}
+                {report.evidence_file_url && (
+                  <div
+                    style={{
+                      padding: '0.875rem 1.5rem',
+                      borderBottom: evidence.length > 0 ? '1px solid #e0e0e0' : 'none',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.125rem',
+                    }}
+                  >
+                    <a
+                      href={report.evidence_file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0f62fe', textDecoration: 'none' }}
+                    >
+                      {report.evidence_file_name ?? 'Attached file'}
+                    </a>
+                    <span style={{ fontSize: '0.75rem', color: '#525252' }}>
+                      Submitted with report
+                    </span>
+                  </div>
+                )}
                 {evidence.map((item, i) => (
                   <div
                     key={item.id}

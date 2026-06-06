@@ -3,27 +3,52 @@
 import { useState } from 'react'
 import {
   Grid, Column, Tile, Button, Select, SelectItem, TextInput, TextArea,
-  Form, FormGroup, InlineNotification,
+  Form, FormGroup, InlineNotification, Toggle,
 } from '@carbon/react'
+import { createClient } from '@/lib/supabase/client'
 
 interface DocType { id: string; name: string }
 interface DocStatus { id: string; name: string }
+interface User { id: string; first_name: string; last_name: string }
 
 interface Props {
   docTypes: DocType[]
   docStatuses: DocStatus[]
+  users: User[]
   action: (formData: FormData) => Promise<{ error?: string }>
 }
 
-export function DocumentForm({ docTypes, docStatuses, action }: Props) {
+export function DocumentForm({ docTypes, docStatuses, users, action }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [requiresAck, setRequiresAck] = useState(false)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
     setLoading(true)
-    const result = await action(new FormData(e.currentTarget))
+
+    const formData = new FormData(e.currentTarget)
+    formData.set('requires_acknowledgement', requiresAck ? 'true' : 'false')
+
+    // FILE UPLOAD PATTERN
+    const supabase = createClient()
+    const fileInput = e.currentTarget.querySelector('input[data-upload="true"]') as HTMLInputElement
+    const file = fileInput?.files?.[0]
+    if (file) {
+      const ext = file.name.split('.').pop() ?? 'bin'
+      const uploadPath = crypto.randomUUID() + '.' + ext
+      const { data: upload } = await supabase.storage.from('documents').upload(uploadPath, file, { upsert: true })
+      if (upload) {
+        const { data: urlData } = supabase.storage.from('documents').getPublicUrl(upload.path)
+        formData.set('file_url', urlData.publicUrl)
+        formData.set('file_name', file.name)
+        formData.set('file_size_bytes', String(file.size))
+        formData.set('file_mime_type', file.type)
+      }
+    }
+
+    const result = await action(formData)
     if (result?.error) { setError(result.error); setLoading(false) }
   }
 
@@ -36,6 +61,38 @@ export function DocumentForm({ docTypes, docStatuses, action }: Props) {
       )}
       <Form onSubmit={handleSubmit}>
         <Grid>
+
+          {/* Document File */}
+          <Column sm={4} md={8} lg={12}>
+            <Tile style={{ padding: 0, marginBottom: '1rem' }}>
+              <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e0e0e0' }}>
+                <h2 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#161616' }}>Document File</h2>
+              </div>
+              <div style={{ padding: '1.5rem' }}>
+                <p style={{ fontSize: '0.875rem', color: '#161616', marginBottom: '0.5rem' }}>Document File</p>
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                  data-upload="true"
+                  style={{ display: 'block', marginBottom: '1rem' }}
+                />
+                <Grid condensed>
+                  <Column sm={4} md={4} lg={8}>
+                    <FormGroup legendText="" style={{ marginBottom: '1rem' }}>
+                      <TextInput
+                        id="version_number"
+                        name="version_number"
+                        labelText="Version Number"
+                        defaultValue="1.0"
+                      />
+                    </FormGroup>
+                  </Column>
+                </Grid>
+              </div>
+            </Tile>
+          </Column>
+
+          {/* Document Details */}
           <Column sm={4} md={8} lg={12}>
             <Tile style={{ padding: 0, marginBottom: '1rem' }}>
               <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e0e0e0' }}>
@@ -69,10 +126,49 @@ export function DocumentForm({ docTypes, docStatuses, action }: Props) {
                       <TextInput id="review_due_date" name="review_due_date" labelText="Review Due Date" type="date" />
                     </FormGroup>
                   </Column>
+                  <Column sm={4} md={4} lg={8}>
+                    <FormGroup legendText="" style={{ marginBottom: '1rem' }}>
+                      <TextInput id="expiry_date" name="expiry_date" labelText="Expiry / Sunset Date" type="date" />
+                    </FormGroup>
+                  </Column>
                   <Column sm={4} md={8} lg={16}>
                     <FormGroup legendText="">
                       <TextArea id="description" name="description" labelText="Description" rows={3} placeholder="Brief description of the document's purpose…" />
                     </FormGroup>
+                  </Column>
+                </Grid>
+              </div>
+            </Tile>
+          </Column>
+
+          {/* Ownership */}
+          <Column sm={4} md={8} lg={12}>
+            <Tile style={{ padding: 0, marginBottom: '1rem' }}>
+              <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e0e0e0' }}>
+                <h2 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#161616' }}>Ownership</h2>
+              </div>
+              <div style={{ padding: '1.5rem' }}>
+                <Grid condensed>
+                  <Column sm={4} md={4} lg={8}>
+                    <FormGroup legendText="" style={{ marginBottom: '1.5rem' }}>
+                      <Select id="owner_id" name="owner_id" labelText="Document Owner">
+                        <SelectItem value="" text="Select owner…" />
+                        {users.map((u) => (
+                          <SelectItem key={u.id} value={u.id} text={u.first_name + ' ' + u.last_name} />
+                        ))}
+                      </Select>
+                    </FormGroup>
+                  </Column>
+                  <Column sm={4} md={4} lg={8}>
+                    <div style={{ paddingTop: '1.5rem' }}>
+                      <Toggle
+                        id="requires_acknowledgement"
+                        labelText="Requires worker acknowledgement"
+                        toggled={requiresAck}
+                        onToggle={(checked: boolean) => setRequiresAck(checked)}
+                        size="sm"
+                      />
+                    </div>
                   </Column>
                 </Grid>
               </div>
@@ -85,6 +181,7 @@ export function DocumentForm({ docTypes, docStatuses, action }: Props) {
               <Button kind="ghost" href="/documents">Cancel</Button>
             </div>
           </Column>
+
         </Grid>
       </Form>
     </div>
