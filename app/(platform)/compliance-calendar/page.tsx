@@ -1,8 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getOrgId } from '@/lib/supabase/get-org-id'
-import { Tile, Button } from '@carbon/react'
-import { Add } from '@carbon/icons-react'
-import Link from 'next/link'
+import { Tile } from '@carbon/react'
+import { NewButton } from '@/components/ui/NewButton'
 import { DataTableClient, type ColDef } from '@/components/table/DataTableClient'
 
 export default async function ComplianceCalendarPage() {
@@ -102,11 +101,7 @@ export default async function ComplianceCalendarPage() {
             {rows.length} obligation{rows.length !== 1 ? 's' : ''} registered
           </p>
         </div>
-        <Link href="/compliance-calendar/new">
-          <Button renderIcon={Add} kind="primary" size="md">
-            New Obligation
-          </Button>
-        </Link>
+        <NewButton href="/compliance-calendar/new" label="New Obligation" />
       </div>
 
       <Tile style={{ padding: 0 }}>

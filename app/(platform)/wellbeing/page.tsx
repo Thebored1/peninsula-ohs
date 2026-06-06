@@ -1,8 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getOrgId } from '@/lib/supabase/get-org-id'
-import { Tile, Button, Tag, Grid, Column } from '@carbon/react'
-import { Add } from '@carbon/icons-react'
-import Link from 'next/link'
+import { Tile, Tag, Grid, Column } from '@carbon/react'
+import { NewButton } from '@/components/ui/NewButton'
 import { DataTableClient, type ColDef } from '@/components/table/DataTableClient'
 
 function ScoreBadge({ score, label }: { score: number | null; label: string }) {
@@ -213,16 +212,8 @@ export default async function WellbeingPage() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <Link href="/wellbeing/check-in">
-            <Button kind="secondary" size="md">
-              Submit Check-In
-            </Button>
-          </Link>
-          <Link href="/wellbeing/new">
-            <Button renderIcon={Add} size="md">
-              Add Resource
-            </Button>
-          </Link>
+          <NewButton href="/wellbeing/check-in" label="Submit Check-In" kind="secondary" />
+          <NewButton href="/wellbeing/new" label="Add Resource" />
         </div>
       </div>
 
@@ -332,11 +323,7 @@ export default async function WellbeingPage() {
               Encourage your team to submit anonymous check-ins to track wellbeing trends.
             </p>
           </div>
-          <Link href="/wellbeing/check-in">
-            <Button kind="primary" size="sm">
-              Submit First Check-In
-            </Button>
-          </Link>
+          <NewButton href="/wellbeing/check-in" label="Submit First Check-In" size="sm" />
         </Tile>
       )}
 
@@ -356,11 +343,7 @@ export default async function WellbeingPage() {
               {resourceRows.length}
             </Tag>
           </h2>
-          <Link href="/wellbeing/new">
-            <Button kind="ghost" renderIcon={Add} size="sm">
-              Add Resource
-            </Button>
-          </Link>
+          <NewButton href="/wellbeing/new" label="Add Resource" kind="ghost" size="sm" />
         </div>
         <Tile style={{ padding: 0 }}>
           {resourceRows.length === 0 ? (
@@ -401,11 +384,7 @@ export default async function WellbeingPage() {
               {programRows.length}
             </Tag>
           </h2>
-          <Link href="/wellbeing/programs/new">
-            <Button kind="ghost" renderIcon={Add} size="sm">
-              New Program
-            </Button>
-          </Link>
+          <NewButton href="/wellbeing/programs/new" label="New Program" kind="ghost" size="sm" />
         </div>
         <Tile style={{ padding: 0 }}>
           {programRows.length === 0 ? (

@@ -1,8 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getOrgId } from '@/lib/supabase/get-org-id'
-import { Grid, Column, Button, Tile, Tag } from '@carbon/react'
-import { Add } from '@carbon/icons-react'
-import Link from 'next/link'
+import { Grid, Column, Tile, Tag } from '@carbon/react'
+import { NewButton } from '@/components/ui/NewButton'
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -45,9 +44,7 @@ export default async function ReportBuilderPage() {
                 Create and manage custom report definitions
               </p>
             </div>
-            <Link href="/reports/builder/new">
-              <Button renderIcon={Add} size="md">New Report</Button>
-            </Link>
+            <NewButton href="/reports/builder/new" label="New Report" />
           </div>
         </Column>
 
@@ -58,9 +55,7 @@ export default async function ReportBuilderPage() {
               <p style={{ fontSize: '0.875rem', color: '#6f6f6f', marginBottom: '1.5rem' }}>
                 Create your first report to start analysing your OHS data.
               </p>
-              <Link href="/reports/builder/new">
-                <Button renderIcon={Add} size="md" kind="primary">Create Report</Button>
-              </Link>
+              <NewButton href="/reports/builder/new" label="Create Report" />
             </Tile>
           ) : (
             <Grid condensed>

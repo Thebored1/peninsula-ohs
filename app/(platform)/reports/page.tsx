@@ -1,9 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { Grid, Column, Tile, Tag } from '@carbon/react'
 import Link from 'next/link'
-import { Button } from '@carbon/react'
-import { Add } from '@carbon/icons-react'
 import ExportCSVButton from './ExportCSVButton'
+import { NewButton } from '@/components/ui/NewButton'
 import TrendChart from '@/components/charts/TrendChart'
 
 type TagType = 'blue' | 'teal'
@@ -129,9 +128,7 @@ export default async function ReportsPage() {
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           <ExportCSVButton orgId={orgId} />
-          <Link href="/reports/builder">
-            <Button renderIcon={Add} size="md" kind="ghost">Report Builder</Button>
-          </Link>
+          <NewButton href="/reports/builder" label="Report Builder" kind="ghost" />
         </div>
       </div>
 

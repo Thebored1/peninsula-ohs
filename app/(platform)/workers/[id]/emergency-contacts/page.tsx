@@ -5,11 +5,9 @@ import {
   Column,
   Breadcrumb,
   BreadcrumbItem,
-  Button,
   Tag,
 } from '@carbon/react'
-import { Add } from '@carbon/icons-react'
-import Link from 'next/link'
+import { NewButton } from '@/components/ui/NewButton'
 import { DataTableClient } from '@/components/table/DataTableClient'
 import type { ColDef } from '@/components/table/DataTableClient'
 
@@ -92,9 +90,7 @@ export default async function EmergencyContactsPage({ params }: PageProps) {
                 {workerName} — {(contacts ?? []).length} contact{(contacts ?? []).length !== 1 ? 's' : ''}
               </p>
             </div>
-            <Link href={`/workers/${id}/emergency-contacts/new`}>
-              <Button renderIcon={Add} size="md">Add Emergency Contact</Button>
-            </Link>
+            <NewButton href={`/workers/${id}/emergency-contacts/new`} label="Add Emergency Contact" />
           </div>
         </Column>
 
