@@ -25,6 +25,15 @@ export default async function NewDocumentPage() {
         .order('first_name')
     : { data: [] }
 
+  const { data: workflows } = profile?.organisation_id
+    ? await supabase
+        .from('document_review_workflows')
+        .select('id, name, is_default')
+        .eq('organisation_id', profile.organisation_id)
+        .eq('is_active', true)
+        .order('name')
+    : { data: [] }
+
   return (
     <div style={{ padding: '2rem' }}>
       <Grid>
@@ -42,6 +51,7 @@ export default async function NewDocumentPage() {
         docTypes={docTypes ?? []}
         docStatuses={docStatuses ?? []}
         users={users ?? []}
+        workflows={workflows ?? []}
         action={createDocument}
       />
     </div>

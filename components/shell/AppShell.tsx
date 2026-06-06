@@ -477,14 +477,15 @@ export function AppShell({ children, userEmail }: AppShellProps) {
             Chemicals
           </SideNavLink>
 
-          <SideNavLink
-            href="/documents"
+          <SideNavMenu
+            title="Documents"
             renderIcon={Document}
             isActive={isActive('/documents')}
-            element={Link}
+            defaultExpanded={isActive('/documents')}
           >
-            Documents
-          </SideNavLink>
+            <SideNavMenuItem href="/documents" isActive={pathname === '/documents'} element={Link}>All Documents</SideNavMenuItem>
+            <SideNavMenuItem href="/documents/workflows" isActive={isActive('/documents/workflows')} element={Link}>Review Workflows</SideNavMenuItem>
+          </SideNavMenu>
 
           <SideNavMenu
             title="Emergency"
@@ -538,6 +539,13 @@ export function AppShell({ children, userEmail }: AppShellProps) {
               element={Link}
             >
               Integrations
+            </SideNavMenuItem>
+            <SideNavMenuItem
+              href="/settings/documents"
+              isActive={isActive('/settings/documents')}
+              element={Link}
+            >
+              Document Settings
             </SideNavMenuItem>
           </SideNavMenu>
         </SideNavItems>

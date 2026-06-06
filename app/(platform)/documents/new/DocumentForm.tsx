@@ -10,15 +10,17 @@ import { createClient } from '@/lib/supabase/client'
 interface DocType { id: string; name: string }
 interface DocStatus { id: string; name: string }
 interface User { id: string; first_name: string; last_name: string }
+interface Workflow { id: string; name: string; is_default: boolean }
 
 interface Props {
   docTypes: DocType[]
   docStatuses: DocStatus[]
   users: User[]
+  workflows: Workflow[]
   action: (formData: FormData) => Promise<{ error?: string }>
 }
 
-export function DocumentForm({ docTypes, docStatuses, users, action }: Props) {
+export function DocumentForm({ docTypes, docStatuses, users, workflows, action }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [requiresAck, setRequiresAck] = useState(false)
@@ -149,6 +151,16 @@ export function DocumentForm({ docTypes, docStatuses, users, action }: Props) {
               </div>
               <div style={{ padding: '1.5rem' }}>
                 <Grid condensed>
+                  <Column sm={4} md={4} lg={8}>
+                    <FormGroup legendText="" style={{ marginBottom: '1rem' }}>
+                      <Select id="review_workflow_id" name="review_workflow_id" labelText="Review Workflow">
+                        <SelectItem value="" text="None (no approval required)" />
+                        {workflows.map((w) => (
+                          <SelectItem key={w.id} value={w.id} text={w.name + (w.is_default ? ' (default)' : '')} />
+                        ))}
+                      </Select>
+                    </FormGroup>
+                  </Column>
                   <Column sm={4} md={4} lg={8}>
                     <FormGroup legendText="" style={{ marginBottom: '1.5rem' }}>
                       <Select id="owner_id" name="owner_id" labelText="Document Owner">
