@@ -39,6 +39,7 @@ export async function createDocument(formData: FormData): Promise<{ error?: stri
   const ownerId = (formData.get('owner_id') as string | null) || null
   const requiresAck = formData.get('requires_acknowledgement') === 'true'
   const expiryDate = (formData.get('expiry_date') as string | null) || null
+  const applicableProvinces = formData.getAll('applicable_provinces') as string[]
 
   let resolvedStatusId = statusId
   if (!resolvedStatusId) {
@@ -66,6 +67,7 @@ export async function createDocument(formData: FormData): Promise<{ error?: stri
       owner_id: ownerId,
       requires_acknowledgement: requiresAck,
       expiry_date: expiryDate,
+      applicable_provinces: applicableProvinces.length > 0 ? applicableProvinces : null,
     })
     .select('id')
     .single()

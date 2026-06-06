@@ -85,6 +85,26 @@ export default async function CourseDetailPage({ params }: PageProps) {
     .eq('course_id', id)
     .order('module_number')
 
+  // Also get the effective user for completion status
+  const { data: { user } } = await supabase.auth.getUser()
+  let effectiveUserId: string | null = user?.id ?? null
+  if (!effectiveUserId) {
+    const { data: first } = await supabase.from('user_profiles').select('id').limit(1).single()
+    effectiveUserId = first?.id ?? null
+  }
+  const completedModuleIds = new Set<string>()
+  if (effectiveUserId && modules && modules.length > 0) {
+    const moduleIds = modules.map((m: { id: string }) => m.id)
+    const { data: completions } = await supabase
+      .from('training_module_completions')
+      .select('module_id')
+      .in('module_id', moduleIds)
+      .eq('worker_id', effectiveUserId)
+    completions?.forEach((c: { module_id: string }) => completedModuleIds.add(c.module_id))
+  }
+  const completedCount = completedModuleIds.size
+  const totalModules = modules?.length ?? 0
+
   const isSystem = !course.organisation_id
 
   function statusColour(status: string): 'green' | 'teal' | 'red' {
@@ -237,65 +257,89 @@ export default async function CourseDetailPage({ params }: PageProps) {
             No modules defined for this course
           </div>
         ) : (
-          <ol style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-            {modules.map((mod, i) => (
-              <li
-                key={mod.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '1rem',
-                  padding: '1rem 1.5rem',
-                  borderBottom: i < modules.length - 1 ? '1px solid #f4f4f4' : 'none',
-                }}
-              >
-                <span style={{
-                  flexShrink: 0,
-                  width: '2rem',
-                  height: '2rem',
-                  borderRadius: '50%',
-                  backgroundColor: '#0f62fe',
-                  color: '#fff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                }}>
-                  {mod.module_number}
-                </span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.25rem' }}>
-                    <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#161616' }}>{mod.title}</span>
-                    {mod.content_type && (
-                      <Tag type={MODULE_TYPE_COLOURS[mod.content_type] ?? 'gray'} size="sm">
-                        {MODULE_TYPE_LABELS[mod.content_type] ?? mod.content_type}
-                      </Tag>
-                    )}
-                    {!mod.is_mandatory && (
-                      <Tag type="gray" size="sm">Optional</Tag>
-                    )}
-                    {mod.duration_minutes && (
-                      <span style={{ fontSize: '0.75rem', color: '#6f6f6f' }}>{mod.duration_minutes} min</span>
-                    )}
-                  </div>
-                  {mod.description && (
-                    <p style={{ fontSize: '0.8125rem', color: '#525252', lineHeight: 1.5, margin: 0 }}>{mod.description}</p>
-                  )}
-                  {mod.content_url && (
-                    <a
-                      href={mod.content_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ fontSize: '0.75rem', color: '#0f62fe', textDecoration: 'none', marginTop: '0.25rem', display: 'inline-block' }}
-                    >
-                      Open content ↗
-                    </a>
-                  )}
+          <div style={{ padding: '1rem 1.5rem' }}>
+            {/* Progress bar */}
+            {totalModules > 0 && (
+              <div style={{ marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#525252' }}>Course Progress</span>
+                  <span style={{ fontSize: '0.75rem', color: '#525252' }}>{completedCount} / {totalModules} modules</span>
                 </div>
-              </li>
-            ))}
-          </ol>
+                <div style={{ background: '#e0e0e0', height: '6px', borderRadius: '3px' }}>
+                  <div style={{ background: '#0f62fe', height: '6px', borderRadius: '3px', width: totalModules > 0 ? `${Math.round((completedCount / totalModules) * 100)}%` : '0%', transition: 'width 0.3s' }} />
+                </div>
+              </div>
+            )}
+
+            {/* Start / Resume / Review button */}
+            {totalModules > 0 && (() => {
+              const firstIncomplete = modules?.find((m: { id: string }) => !completedModuleIds.has(m.id))
+              const targetModule = firstIncomplete ?? modules?.[0]
+              if (!targetModule) return null
+              return (
+                <div style={{ marginBottom: '1rem' }}>
+                  <Link href={`/training/courses/${id}/modules/${targetModule.id}`}>
+                    <button style={{ padding: '0.625rem 1.25rem', background: '#0f62fe', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '0.875rem' }}>
+                      {completedCount === 0 ? 'Start Course' : completedCount === totalModules ? 'Review Course' : 'Resume Course'}
+                    </button>
+                  </Link>
+                </div>
+              )
+            })()}
+
+            {/* Module list */}
+            <ol style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+              {modules.map((mod) => (
+                <li key={mod.id} style={{ marginBottom: '0.5rem' }}>
+                  <Link
+                    href={`/training/courses/${id}/modules/${mod.id}`}
+                    style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', border: '1px solid #e0e0e0', background: completedModuleIds.has(mod.id) ? 'rgba(36,161,72,0.05)' : '#fff' }}>
+                      <span style={{
+                        flexShrink: 0,
+                        width: '2rem',
+                        height: '2rem',
+                        borderRadius: '50%',
+                        backgroundColor: '#0f62fe',
+                        color: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                      }}>
+                        {mod.module_number}
+                      </span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.25rem' }}>
+                          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#161616' }}>{mod.title}</span>
+                          {mod.content_type && (
+                            <Tag type={MODULE_TYPE_COLOURS[mod.content_type] ?? 'gray'} size="sm">
+                              {MODULE_TYPE_LABELS[mod.content_type] ?? mod.content_type}
+                            </Tag>
+                          )}
+                          {!mod.is_mandatory && (
+                            <Tag type="gray" size="sm">Optional</Tag>
+                          )}
+                          {mod.duration_minutes && (
+                            <span style={{ fontSize: '0.75rem', color: '#6f6f6f' }}>{mod.duration_minutes} min</span>
+                          )}
+                        </div>
+                        {mod.description && (
+                          <p style={{ fontSize: '0.8125rem', color: '#525252', lineHeight: 1.5, margin: 0 }}>{mod.description}</p>
+                        )}
+                      </div>
+                      {completedModuleIds.has(mod.id)
+                        ? <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: '#24a148', fontWeight: 600, flexShrink: 0 }}>✓ Done</span>
+                        : <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: '#6f6f6f', flexShrink: 0 }}>Not started</span>
+                      }
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ol>
+          </div>
         )}
       </Tile>
     </div>

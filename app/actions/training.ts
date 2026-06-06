@@ -24,6 +24,7 @@ export async function createCourse(formData: FormData): Promise<{ error?: string
   const durationHoursRaw = formData.get('duration_hours') as string
   const validityMonthsRaw = formData.get('validity_period_months') as string
   const isCertification = formData.get('is_certification') === 'true'
+  const applicableProvinces = formData.getAll('applicable_provinces') as string[]
 
   const { error } = await supabase.from('training_courses').insert({
     organisation_id: orgId,
@@ -36,6 +37,7 @@ export async function createCourse(formData: FormData): Promise<{ error?: string
     is_certification: isCertification,
     is_active: true,
     created_by: user.id,
+    applicable_provinces: applicableProvinces.length > 0 ? applicableProvinces : null,
   })
 
   if (error) return { error: error.message }
@@ -279,4 +281,33 @@ export async function addCourseModule(formData: FormData): Promise<{ error?: str
 
   revalidatePath(`/training/courses/${courseId}`)
   redirect(`/training/courses/${courseId}`)
+}
+
+export async function completeModule(moduleId: string): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  // Dev bypass: get first user profile if no auth
+  const { data: { user } } = await supabase.auth.getUser()
+  let orgId: string | null = null
+  let userId: string | null = null
+  if (user) {
+    const { data: p } = await supabase.from('user_profiles').select('organisation_id').eq('id', user.id).single()
+    orgId = p?.organisation_id ?? null
+    userId = user.id
+  } else {
+    const { data: first } = await supabase.from('user_profiles').select('id, organisation_id').limit(1).single()
+    orgId = first?.organisation_id ?? null
+    userId = first?.id ?? null
+  }
+  if (!orgId || !userId) return { error: 'No organisation found' }
+
+  const { error } = await supabase.from('training_module_completions').upsert(
+    { module_id: moduleId, worker_id: userId, organisation_id: orgId, completed_at: new Date().toISOString() },
+    { onConflict: 'module_id,worker_id' }
+  )
+  if (error) return { error: error.message }
+
+  // Get the course_id so we can revalidate
+  const { data: mod } = await supabase.from('training_course_modules').select('course_id').eq('id', moduleId).single()
+  if (mod?.course_id) revalidatePath(`/training/courses/${mod.course_id}`)
+  return {}
 }

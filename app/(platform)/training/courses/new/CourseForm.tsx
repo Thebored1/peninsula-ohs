@@ -15,6 +15,22 @@ const COURSE_TYPES = [
   { value: 'assessment', label: 'Assessment' },
 ]
 
+const PROVINCES = [
+  { code: 'ON', name: 'Ontario' },
+  { code: 'BC', name: 'British Columbia' },
+  { code: 'AB', name: 'Alberta' },
+  { code: 'QC', name: 'Quebec' },
+  { code: 'SK', name: 'Saskatchewan' },
+  { code: 'MB', name: 'Manitoba' },
+  { code: 'NS', name: 'Nova Scotia' },
+  { code: 'NB', name: 'New Brunswick' },
+  { code: 'PE', name: 'Prince Edward Island' },
+  { code: 'NL', name: 'Newfoundland & Labrador' },
+  { code: 'YT', name: 'Yukon' },
+  { code: 'NT', name: 'Northwest Territories' },
+  { code: 'NU', name: 'Nunavut' },
+]
+
 export function CourseForm() {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -108,6 +124,26 @@ export function CourseForm() {
                     />
                   </Column>
                 </Grid>
+              </div>
+            </Tile>
+
+            {/* Province / Jurisdiction */}
+            <Tile style={{ padding: 0, marginBottom: '1rem' }}>
+              <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e0e0e0' }}>
+                <h2 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#161616' }}>Province / Jurisdiction</h2>
+              </div>
+              <div style={{ padding: '1.5rem' }}>
+                <p style={{ fontSize: '0.875rem', color: '#6f6f6f', marginBottom: '1rem' }}>
+                  Select which Canadian provinces this applies to. Leave blank to apply to all.
+                </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+                  {PROVINCES.map((p) => (
+                    <label key={p.code} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', cursor: 'pointer', fontSize: '0.875rem', color: '#161616' }}>
+                      <input type="checkbox" name="applicable_provinces" value={p.code} style={{ cursor: 'pointer' }} />
+                      <span><strong>{p.code}</strong> — {p.name}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             </Tile>
 

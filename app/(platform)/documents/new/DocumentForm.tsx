@@ -7,6 +7,22 @@ import {
 } from '@carbon/react'
 import { createClient } from '@/lib/supabase/client'
 
+const PROVINCES = [
+  { code: 'ON', name: 'Ontario' },
+  { code: 'BC', name: 'British Columbia' },
+  { code: 'AB', name: 'Alberta' },
+  { code: 'QC', name: 'Quebec' },
+  { code: 'SK', name: 'Saskatchewan' },
+  { code: 'MB', name: 'Manitoba' },
+  { code: 'NS', name: 'Nova Scotia' },
+  { code: 'NB', name: 'New Brunswick' },
+  { code: 'PE', name: 'Prince Edward Island' },
+  { code: 'NL', name: 'Newfoundland & Labrador' },
+  { code: 'YT', name: 'Yukon' },
+  { code: 'NT', name: 'Northwest Territories' },
+  { code: 'NU', name: 'Nunavut' },
+]
+
 interface DocType { id: string; name: string }
 interface DocStatus { id: string; name: string }
 interface User { id: string; first_name: string; last_name: string }
@@ -40,7 +56,8 @@ export function DocumentForm({ docTypes, docStatuses, users, workflows, action }
     if (file) {
       const ext = file.name.split('.').pop() ?? 'bin'
       const uploadPath = crypto.randomUUID() + '.' + ext
-      const { data: upload } = await supabase.storage.from('documents').upload(uploadPath, file, { upsert: true })
+      const { data: upload, error: uploadErr } = await supabase.storage.from('documents').upload(uploadPath, file, { upsert: true })
+      if (uploadErr) { setError('File upload failed: ' + uploadErr.message); setLoading(false); return }
       if (upload) {
         const { data: urlData } = supabase.storage.from('documents').getPublicUrl(upload.path)
         formData.set('file_url', urlData.publicUrl)
@@ -68,15 +85,20 @@ export function DocumentForm({ docTypes, docStatuses, users, workflows, action }
           <Column sm={4} md={8} lg={12}>
             <Tile style={{ padding: 0, marginBottom: '1rem' }}>
               <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e0e0e0' }}>
-                <h2 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#161616' }}>Document File</h2>
+                <h2 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#161616' }}>Attach Document File</h2>
               </div>
               <div style={{ padding: '1.5rem' }}>
-                <p style={{ fontSize: '0.875rem', color: '#161616', marginBottom: '0.5rem' }}>Document File</p>
+                <p style={{ fontSize: '0.875rem', color: '#6f6f6f', marginBottom: '1rem' }}>
+                  Attach the actual document file. Supported formats: PDF, Word, Excel, PowerPoint, plain text.
+                </p>
+                <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#161616', marginBottom: '0.5rem' }}>
+                  Upload File (PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT)
+                </p>
                 <input
                   type="file"
                   accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
                   data-upload="true"
-                  style={{ display: 'block', marginBottom: '1rem' }}
+                  style={{ display: 'block', marginBottom: '1rem', fontSize: '0.875rem' }}
                 />
                 <Grid condensed>
                   <Column sm={4} md={4} lg={8}>
@@ -183,6 +205,28 @@ export function DocumentForm({ docTypes, docStatuses, users, workflows, action }
                     </div>
                   </Column>
                 </Grid>
+              </div>
+            </Tile>
+          </Column>
+
+          {/* Province / Jurisdiction */}
+          <Column sm={4} md={8} lg={12}>
+            <Tile style={{ padding: 0, marginBottom: '1rem' }}>
+              <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e0e0e0' }}>
+                <h2 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#161616' }}>Province / Jurisdiction</h2>
+              </div>
+              <div style={{ padding: '1.5rem' }}>
+                <p style={{ fontSize: '0.875rem', color: '#6f6f6f', marginBottom: '1rem' }}>
+                  Select which Canadian provinces this applies to. Leave blank to apply to all.
+                </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+                  {PROVINCES.map((p) => (
+                    <label key={p.code} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', cursor: 'pointer', fontSize: '0.875rem', color: '#161616' }}>
+                      <input type="checkbox" name="applicable_provinces" value={p.code} style={{ cursor: 'pointer' }} />
+                      <span><strong>{p.code}</strong> — {p.name}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             </Tile>
           </Column>

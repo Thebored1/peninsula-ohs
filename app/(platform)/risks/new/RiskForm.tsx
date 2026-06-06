@@ -63,6 +63,22 @@ const CONTROL_TYPE_OPTIONS = [
   { value: 'directive',    label: 'Directive' },
 ]
 
+const PROVINCES = [
+  { code: 'ON', name: 'Ontario' },
+  { code: 'BC', name: 'British Columbia' },
+  { code: 'AB', name: 'Alberta' },
+  { code: 'QC', name: 'Quebec' },
+  { code: 'SK', name: 'Saskatchewan' },
+  { code: 'MB', name: 'Manitoba' },
+  { code: 'NS', name: 'Nova Scotia' },
+  { code: 'NB', name: 'New Brunswick' },
+  { code: 'PE', name: 'Prince Edward Island' },
+  { code: 'NL', name: 'Newfoundland & Labrador' },
+  { code: 'YT', name: 'Yukon' },
+  { code: 'NT', name: 'Northwest Territories' },
+  { code: 'NU', name: 'Nunavut' },
+]
+
 function getRiskLevel(score: number): { label: string; bg: string; color: string } {
   if (score <= 4)  return { label: 'Low',      bg: 'rgba(36,161,72,0.15)',  color: '#24a148' }
   if (score <= 9)  return { label: 'Medium',   bg: 'rgba(241,194,27,0.15)', color: '#b08800' }
@@ -441,11 +457,11 @@ export default function RiskForm({ categories, likelihoodLevels, consequenceLeve
             </Tile>
 
             {/* Residual Risk Assessment */}
-            <Tile style={{ padding: 0, marginBottom: '1rem' }}>
+            <Tile style={{ padding: 0, marginBottom: '1rem', borderLeft: '4px solid #0f62fe' }}>
               <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e0e0e0' }}>
                 <h2 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#161616' }}>Residual Risk (After Controls)</h2>
                 <p style={{ fontSize: '0.75rem', color: '#6f6f6f', marginTop: '0.25rem' }}>
-                  Rate the risk after all controls have been applied.
+                  Re-score the risk after all controls above have been applied.
                 </p>
               </div>
               <div style={{ padding: '1.5rem' }}>
@@ -583,6 +599,26 @@ export default function RiskForm({ categories, likelihoodLevels, consequenceLeve
                   placeholder="Any additional notes or context for this risk..."
                   rows={2}
                 />
+              </div>
+            </Tile>
+
+            {/* Province / Jurisdiction */}
+            <Tile style={{ padding: 0, marginBottom: '1rem' }}>
+              <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e0e0e0' }}>
+                <h2 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#161616' }}>Province / Jurisdiction</h2>
+              </div>
+              <div style={{ padding: '1.5rem' }}>
+                <p style={{ fontSize: '0.875rem', color: '#6f6f6f', marginBottom: '1rem' }}>
+                  Select which Canadian provinces this applies to. Leave blank to apply to all.
+                </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+                  {PROVINCES.map((p) => (
+                    <label key={p.code} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', cursor: 'pointer', fontSize: '0.875rem', color: '#161616' }}>
+                      <input type="checkbox" name="applicable_provinces" value={p.code} style={{ cursor: 'pointer' }} />
+                      <span><strong>{p.code}</strong> — {p.name}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             </Tile>
 

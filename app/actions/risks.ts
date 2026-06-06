@@ -53,6 +53,7 @@ export async function createRisk(formData: FormData): Promise<{ error?: string }
 
   // New fields
   const risk_owner_id = formData.get('risk_owner_id')?.toString().trim() || null
+  const applicableProvinces = formData.getAll('applicable_provinces') as string[]
   const residual_likelihood_str = formData.get('residual_likelihood')?.toString()
   const residual_consequence_str = formData.get('residual_consequence')?.toString()
   const residual_likelihood = residual_likelihood_str ? parseInt(residual_likelihood_str, 10) || null : null
@@ -76,6 +77,7 @@ export async function createRisk(formData: FormData): Promise<{ error?: string }
       source_type: 'standalone',
       created_by: user.id,
       ...(risk_owner_id ? { risk_owner_id } : {}),
+      applicable_provinces: applicableProvinces.length > 0 ? applicableProvinces : null,
       ...(residual_likelihood != null ? { residual_likelihood } : {}),
       ...(residual_consequence != null ? { residual_consequence } : {}),
     })

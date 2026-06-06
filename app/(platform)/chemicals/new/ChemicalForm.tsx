@@ -49,7 +49,8 @@ export function ChemicalForm({ categories, physicalStates, action }: Props) {
     if (file) {
       const ext = file.name.split('.').pop() ?? 'bin'
       const uploadPath = crypto.randomUUID() + '.' + ext
-      const { data: upload } = await supabase.storage.from('sds-documents').upload(uploadPath, file, { upsert: true })
+      const { data: upload, error: uploadErr } = await supabase.storage.from('sds-documents').upload(uploadPath, file, { upsert: true })
+      if (uploadErr) { setError('SDS upload failed: ' + uploadErr.message); setLoading(false); return }
       if (upload) {
         const { data: urlData } = supabase.storage.from('sds-documents').getPublicUrl(upload.path)
         formData.set('sds_file_url', urlData.publicUrl)
@@ -74,6 +75,60 @@ export function ChemicalForm({ categories, physicalStates, action }: Props) {
       )}
       <Form onSubmit={handleSubmit}>
         <Grid>
+          {/* ── Safety Data Sheet (SDS) ── */}
+          <Column sm={4} md={8} lg={12}>
+            <Tile style={{ padding: 0, marginBottom: '1rem' }}>
+              <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e0e0e0' }}>
+                <h2 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#161616' }}>Safety Data Sheet (SDS)</h2>
+              </div>
+              <div style={{ padding: '1.5rem' }}>
+                <div style={{ marginBottom: '1rem' }}>
+                  <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#161616', marginBottom: '0.5rem' }}>
+                    Upload SDS Document (PDF) — required for WHMIS compliance
+                  </p>
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    data-upload="true"
+                    style={{ marginBottom: '1rem', fontSize: '0.875rem', color: '#161616' }}
+                  />
+                </div>
+                <Grid condensed>
+                  <Column sm={4} md={4} lg={8}>
+                    <FormGroup legendText="" style={{ marginBottom: '1rem' }}>
+                      <DatePicker
+                        datePickerType="single"
+                        dateFormat="d/m/Y"
+                        onChange={(dates: readonly Date[]) => setSdsIssueDate(formatDateForInput(dates))}
+                      >
+                        <DatePickerInput
+                          id="sds_issue_date"
+                          labelText="SDS Issue Date"
+                          placeholder="dd/mm/yyyy"
+                        />
+                      </DatePicker>
+                    </FormGroup>
+                  </Column>
+                  <Column sm={4} md={4} lg={8}>
+                    <FormGroup legendText="" style={{ marginBottom: '1rem' }}>
+                      <DatePicker
+                        datePickerType="single"
+                        dateFormat="d/m/Y"
+                        onChange={(dates: readonly Date[]) => setSdsReviewDate(formatDateForInput(dates))}
+                      >
+                        <DatePickerInput
+                          id="sds_review_date"
+                          labelText="SDS Review Due Date"
+                          placeholder="dd/mm/yyyy"
+                        />
+                      </DatePicker>
+                    </FormGroup>
+                  </Column>
+                </Grid>
+              </div>
+            </Tile>
+          </Column>
+
           {/* ── Chemical Details ── */}
           <Column sm={4} md={8} lg={12}>
             <Tile style={{ padding: 0, marginBottom: '1rem' }}>
@@ -271,60 +326,6 @@ export function ChemicalForm({ categories, physicalStates, action }: Props) {
                         <SelectItem value="mg/L" text="mg/L" />
                         <SelectItem value="%" text="%" />
                       </Select>
-                    </FormGroup>
-                  </Column>
-                </Grid>
-              </div>
-            </Tile>
-          </Column>
-
-          {/* ── Safety Data Sheet (SDS) ── */}
-          <Column sm={4} md={8} lg={12}>
-            <Tile style={{ padding: 0, marginBottom: '1rem' }}>
-              <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e0e0e0' }}>
-                <h2 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#161616' }}>Safety Data Sheet (SDS)</h2>
-              </div>
-              <div style={{ padding: '1.5rem' }}>
-                <div style={{ marginBottom: '1rem' }}>
-                  <p style={{ fontSize: '0.75rem', color: '#525252', letterSpacing: '0.32px', marginBottom: '0.5rem' }}>
-                    Upload SDS Document (PDF)
-                  </p>
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    data-upload="true"
-                    style={{ marginBottom: '1rem', fontSize: '0.875rem', color: '#161616' }}
-                  />
-                </div>
-                <Grid condensed>
-                  <Column sm={4} md={4} lg={8}>
-                    <FormGroup legendText="" style={{ marginBottom: '1rem' }}>
-                      <DatePicker
-                        datePickerType="single"
-                        dateFormat="d/m/Y"
-                        onChange={(dates: readonly Date[]) => setSdsIssueDate(formatDateForInput(dates))}
-                      >
-                        <DatePickerInput
-                          id="sds_issue_date"
-                          labelText="SDS Issue Date"
-                          placeholder="dd/mm/yyyy"
-                        />
-                      </DatePicker>
-                    </FormGroup>
-                  </Column>
-                  <Column sm={4} md={4} lg={8}>
-                    <FormGroup legendText="" style={{ marginBottom: '1rem' }}>
-                      <DatePicker
-                        datePickerType="single"
-                        dateFormat="d/m/Y"
-                        onChange={(dates: readonly Date[]) => setSdsReviewDate(formatDateForInput(dates))}
-                      >
-                        <DatePickerInput
-                          id="sds_review_date"
-                          labelText="SDS Review Due Date"
-                          placeholder="dd/mm/yyyy"
-                        />
-                      </DatePicker>
                     </FormGroup>
                   </Column>
                 </Grid>
