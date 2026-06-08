@@ -64,6 +64,7 @@ export async function updateCourse(formData: FormData): Promise<{ error?: string
   const validityMonthsRaw = formData.get('validity_period_months') as string
   const isCertification = formData.get('is_certification') === 'true'
   const isActive = formData.get('is_active') !== 'false'
+  const applicableProvinces = formData.getAll('applicable_provinces') as string[]
 
   const { error } = await supabase
     .from('training_courses')
@@ -76,6 +77,7 @@ export async function updateCourse(formData: FormData): Promise<{ error?: string
       validity_period_months: validityMonthsRaw ? parseInt(validityMonthsRaw, 10) : null,
       is_certification: isCertification,
       is_active: isActive,
+      applicable_provinces: applicableProvinces.length > 0 ? applicableProvinces : null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)

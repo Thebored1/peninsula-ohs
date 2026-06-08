@@ -4,6 +4,13 @@ import { Tile } from '@carbon/react'
 import Link from 'next/link'
 import { NewButton } from '@/components/ui/NewButton'
 
+const PROVINCE_NAMES: Record<string, string> = {
+  ON: 'Ontario', BC: 'British Columbia', AB: 'Alberta', QC: 'Quebec',
+  SK: 'Saskatchewan', MB: 'Manitoba', NS: 'Nova Scotia', NB: 'New Brunswick',
+  PE: 'Prince Edward Island', NL: 'Newfoundland & Labrador',
+  YT: 'Yukon', NT: 'Northwest Territories', NU: 'Nunavut',
+}
+
 function formatDate(iso: string | null) {
   if (!iso) return '—'
   return new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -39,6 +46,9 @@ export default async function TrainingPage() {
     { count: expiredCount },
     { count: inductionCount },
     { data: expiringSoonRecords },
+    { data: orgRow },
+    { count: workerCount },
+    { data: allSystemCourses },
   ] = await Promise.all([
     supabase
       .from('training_records')
@@ -72,7 +82,50 @@ export default async function TrainingPage() {
       .lte('expiry_date', cutoff)
       .order('expiry_date', { ascending: true })
       .limit(10),
+    supabase.from('organisations').select('province').eq('id', orgId).single(),
+    supabase
+      .from('user_profiles')
+      .select('id', { count: 'exact', head: true })
+      .eq('organisation_id', orgId),
+    supabase
+      .from('training_courses')
+      .select('id, name, is_certification, applicable_provinces')
+      .is('organisation_id', null)
+      .eq('is_active', true)
+      .order('name'),
   ])
+
+  const province = orgRow?.province ?? null
+  const provinceName = province ? (PROVINCE_NAMES[province] ?? province) : null
+
+  // Filter system courses to those applicable to the org's province
+  const complianceCourses = (allSystemCourses ?? []).filter((c) => {
+    if (!province) return !c.applicable_provinces || c.applicable_provinces.length === 0
+    if (!c.applicable_provinces || c.applicable_provinces.length === 0) return true
+    return c.applicable_provinces.includes(province)
+  })
+
+  // Count distinct workers with current/expiring_soon records per course
+  let completionCounts: Record<string, number> = {}
+  if (complianceCourses.length > 0) {
+    const courseIds = complianceCourses.map((c) => c.id)
+    const { data: completionRows } = await supabase
+      .from('training_records')
+      .select('course_id, worker_id')
+      .eq('organisation_id', orgId)
+      .in('course_id', courseIds)
+      .in('status', ['current', 'expiring_soon'])
+    const workersByCourse: Record<string, Set<string>> = {}
+    for (const r of completionRows ?? []) {
+      if (!workersByCourse[r.course_id]) workersByCourse[r.course_id] = new Set()
+      workersByCourse[r.course_id].add(r.worker_id)
+    }
+    completionCounts = Object.fromEntries(
+      Object.entries(workersByCourse).map(([k, v]) => [k, v.size])
+    )
+  }
+
+  const totalWorkers = workerCount ?? 0
 
   const stats = [
     { label: 'Total Records', value: totalRecords ?? 0, href: '/training/records', colour: '#0f62fe', bg: '#edf5ff' },
@@ -164,6 +217,82 @@ export default async function TrainingPage() {
                     <p style={{ fontSize: '0.75rem', color: '#6f6f6f' }}>
                       Expires {formatDate(r.expiry_date)}
                     </p>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        </Tile>
+      )}
+
+      {/* Province compliance panel */}
+      {complianceCourses.length > 0 && (
+        <Tile style={{ padding: 0, marginBottom: '2rem' }}>
+          <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <h2 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#161616', marginBottom: '0.125rem' }}>
+                Jurisdiction Compliance
+                {provinceName && (
+                  <span style={{ marginLeft: '0.5rem', fontWeight: 400, color: '#525252' }}>
+                    — {provinceName} ({province})
+                  </span>
+                )}
+              </h2>
+              <p style={{ fontSize: '0.75rem', color: '#6f6f6f' }}>
+                Required system courses · {totalWorkers} worker{totalWorkers !== 1 ? 's' : ''} in your organisation
+              </p>
+            </div>
+            {!province && (
+              <a href="/settings/organisation" style={{ fontSize: '0.75rem', color: '#0f62fe', textDecoration: 'none' }}>
+                Set province
+              </a>
+            )}
+          </div>
+          <div>
+            {complianceCourses.map((course, i) => {
+              const trained = completionCounts[course.id] ?? 0
+              const pct = totalWorkers > 0 ? Math.round((trained / totalWorkers) * 100) : 0
+              const isFullCoverage = totalWorkers > 0 && trained >= totalWorkers
+              const barColour = isFullCoverage ? '#24a148' : pct >= 50 ? '#f1c21b' : '#da1e28'
+              return (
+                <Link
+                  key={course.id}
+                  href={`/training/courses/${course.id}`}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '1.5rem',
+                    padding: '0.875rem 1.5rem',
+                    borderBottom: i < complianceCourses.length - 1 ? '1px solid #f4f4f4' : 'none',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: '0.875rem', color: '#161616', marginBottom: '0.375rem' }}>
+                      {course.name}
+                      {course.is_certification && (
+                        <span style={{ marginLeft: '0.5rem', fontSize: '0.6875rem', background: '#e8e8ff', color: '#393999', padding: '0.125rem 0.375rem', borderRadius: '2px' }}>
+                          Certification
+                        </span>
+                      )}
+                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div style={{ flex: 1, background: '#e0e0e0', height: '4px', borderRadius: '2px', maxWidth: '200px' }}>
+                        <div style={{ background: barColour, height: '4px', borderRadius: '2px', width: `${pct}%`, transition: 'width 0.3s' }} />
+                      </div>
+                      <span style={{ fontSize: '0.75rem', color: '#525252', flexShrink: 0 }}>
+                        {trained}/{totalWorkers} workers
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    {isFullCoverage ? (
+                      <span style={{ fontSize: '0.75rem', color: '#24a148', fontWeight: 600 }}>✓ Full coverage</span>
+                    ) : (
+                      <span style={{ fontSize: '0.75rem', color: totalWorkers > 0 ? '#da1e28' : '#6f6f6f', fontWeight: 600 }}>
+                        {totalWorkers > 0 ? `${totalWorkers - trained} gap${totalWorkers - trained !== 1 ? 's' : ''}` : 'No workers'}
+                      </span>
+                    )}
                   </div>
                 </Link>
               )
