@@ -39,6 +39,7 @@ import {
   Construction,
   Education,
   Alarm,
+  Collaborate,
 } from '@carbon/icons-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -125,6 +126,7 @@ export function AppShell({ children, userEmail, impersonating }: AppShellProps) 
       audit: '/audits',
       permit: '/permits',
       investigation: '/investigations',
+      hire: '/hiring',
     }
     const base = typeMap[n.related_entity_type]
     return base ? `${base}/${n.related_entity_id}` : '#'
@@ -434,6 +436,19 @@ export function AppShell({ children, userEmail, impersonating }: AppShellProps) 
             <SideNavMenuItem href="/ppe" isActive={isActive('/ppe')} element={Link}>PPE Issuance</SideNavMenuItem>
             <SideNavMenuItem href="/fatigue" isActive={isActive('/fatigue')} element={Link}>Fatigue Monitoring</SideNavMenuItem>
             <SideNavMenuItem href="/wellbeing" isActive={isActive('/wellbeing')} element={Link}>Wellbeing</SideNavMenuItem>
+          </SideNavMenu>
+
+          <SideNavMenu
+            title="Hiring"
+            renderIcon={Collaborate}
+            isActive={isActive('/hiring')}
+            defaultExpanded={isActive('/hiring')}
+          >
+            <SideNavMenuItem href="/hiring" isActive={pathname === '/hiring'} element={Link}>Overview</SideNavMenuItem>
+            <SideNavMenuItem href="/hiring/new" isActive={isActive('/hiring/new')} element={Link}>New Hire</SideNavMenuItem>
+            <SideNavMenuItem href="/hiring/templates" isActive={isActive('/hiring/templates')} element={Link}>Document Templates</SideNavMenuItem>
+            <SideNavMenuItem href="/hiring/onboarding" isActive={isActive('/hiring/onboarding') && !isActive('/hiring/onboarding/templates')} element={Link}>Onboarding</SideNavMenuItem>
+            <SideNavMenuItem href="/hiring/onboarding/templates" isActive={isActive('/hiring/onboarding/templates')} element={Link}>Onboarding Templates</SideNavMenuItem>
           </SideNavMenu>
 
           <SideNavMenu
