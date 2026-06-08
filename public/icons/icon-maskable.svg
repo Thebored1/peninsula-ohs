@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Full-bleed background required for maskable icons -->
+  <rect width="512" height="512" fill="#0f62fe"/>
+  <path d="M256 100 L390 144 L390 258 C390 338 332 408 256 434 C180 408 122 338 122 258 L122 144 Z" fill="white"/>
+  <polyline points="192,258 232,298 322,208" fill="none" stroke="#0f62fe" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
