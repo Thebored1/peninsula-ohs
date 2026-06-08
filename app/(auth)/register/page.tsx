@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Button,
@@ -13,7 +13,7 @@ import {
   InlineNotification,
   Tile,
 } from '@carbon/react'
-import { ArrowRight, ArrowLeft, Checkmark } from '@carbon/icons-react'
+import { ArrowRight, ArrowLeft, Checkmark, CheckmarkFilled, WarningFilled } from '@carbon/icons-react'
 import { createClient } from '@/lib/supabase/client'
 import { registerUser } from '@/app/actions/auth'
 
@@ -47,6 +47,11 @@ const TIMEZONES = [
 ]
 
 type Step = 'account' | 'organisation'
+type SubdomainStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid'
+
+function makeSubdomainSuggestion(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 32)
+}
 
 function TopLoader({ visible }: { visible: boolean }) {
   if (!visible) return null
@@ -125,15 +130,19 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null)
   const [checkingSession, setCheckingSession] = useState(true)
 
-  // All form state collected client-side — nothing hits the server until final submit
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [orgName, setOrgName] = useState('')
+  const [subdomain, setSubdomain] = useState('')
+  const [subdomainStatus, setSubdomainStatus] = useState<SubdomainStatus>('idle')
+  const [subdomainError, setSubdomainError] = useState<string | null>(null)
   const [industry, setIndustry] = useState('')
   const [timezone, setTimezone] = useState('Australia/Sydney')
+
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -141,6 +150,50 @@ export default function RegisterPage() {
       else setCheckingSession(false)
     })
   }, [])
+
+  // Auto-suggest subdomain when org name changes (only if user hasn't typed one yet)
+  const userEditedSubdomain = useRef(false)
+  function handleOrgNameChange(value: string) {
+    setOrgName(value)
+    if (!userEditedSubdomain.current) {
+      const suggestion = makeSubdomainSuggestion(value)
+      setSubdomain(suggestion)
+      checkSubdomain(suggestion)
+    }
+  }
+
+  function handleSubdomainChange(value: string) {
+    userEditedSubdomain.current = true
+    const clean = value.toLowerCase().replace(/[^a-z0-9-]/g, '')
+    setSubdomain(clean)
+    checkSubdomain(clean)
+  }
+
+  function checkSubdomain(value: string) {
+    setSubdomainStatus('idle')
+    setSubdomainError(null)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (!value) return
+
+    debounceRef.current = setTimeout(async () => {
+      setSubdomainStatus('checking')
+      try {
+        const res = await fetch(`/api/check-subdomain?subdomain=${encodeURIComponent(value)}`)
+        const json = await res.json()
+        if (json.error) {
+          setSubdomainStatus('invalid')
+          setSubdomainError(json.error)
+        } else if (json.available) {
+          setSubdomainStatus('available')
+        } else {
+          setSubdomainStatus('taken')
+          setSubdomainError('That subdomain is already taken.')
+        }
+      } catch {
+        setSubdomainStatus('idle')
+      }
+    }, 400)
+  }
 
   function handleAccountNext(e: React.FormEvent) {
     e.preventDefault()
@@ -154,12 +207,17 @@ export default function RegisterPage() {
     e.preventDefault()
     setError(null)
     if (!orgName.trim()) return setError('Organisation name is required.')
+    if (!subdomain) return setError('Choose a subdomain for your organisation.')
+    if (subdomainStatus === 'taken' || subdomainStatus === 'invalid') {
+      return setError(subdomainError ?? 'Fix your subdomain before continuing.')
+    }
+    if (subdomainStatus === 'checking') {
+      return setError('Subdomain check still in progress — please wait a moment.')
+    }
 
     setLoading(true)
 
-    // Server action: creates user + org + profile + role atomically.
-    // Rolls back (deletes auth user) if any step fails.
-    const result = await registerUser({ email, password, firstName, lastName, orgName, industry, timezone })
+    const result = await registerUser({ email, password, firstName, lastName, orgName, subdomain, industry, timezone })
 
     if (result.error) {
       setLoading(false)
@@ -167,7 +225,6 @@ export default function RegisterPage() {
       return
     }
 
-    // Sign in client-side to get a browser session
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
     if (signInError) {
       setLoading(false)
@@ -175,8 +232,21 @@ export default function RegisterPage() {
       return
     }
 
-    router.push('/dashboard')
+    router.push('/onboarding')
     router.refresh()
+  }
+
+  function subdomainHelperText() {
+    if (subdomainStatus === 'checking') return 'Checking availability…'
+    if (subdomainStatus === 'available') return `✓ ${subdomain}.peninsula.app is available`
+    if (subdomainStatus === 'taken') return subdomainError ?? 'Already taken'
+    if (subdomainStatus === 'invalid') return subdomainError ?? 'Invalid format'
+    if (subdomain) return `${subdomain}.peninsula.app`
+    return 'Only letters, numbers, and hyphens'
+  }
+
+  function subdomainInvalid() {
+    return subdomainStatus === 'taken' || subdomainStatus === 'invalid'
   }
 
   if (checkingSession) {
@@ -244,8 +314,39 @@ export default function RegisterPage() {
           {step === 'organisation' && (
             <Form onSubmit={handleFinalSubmit}>
               <Stack gap={6}>
-                <TextInput id="orgName" labelText="Organisation name" helperText="The name of your company or business unit"
-                  placeholder="Acme Pty Ltd" value={orgName} onChange={e => setOrgName(e.target.value)} required autoFocus />
+                <TextInput
+                  id="orgName"
+                  labelText="Organisation name"
+                  helperText="The name of your company or business unit"
+                  placeholder="Acme Pty Ltd"
+                  value={orgName}
+                  onChange={e => handleOrgNameChange(e.target.value)}
+                  required
+                  autoFocus
+                />
+                <div>
+                  <TextInput
+                    id="subdomain"
+                    labelText="Your subdomain"
+                    helperText={subdomainHelperText()}
+                    placeholder="acme"
+                    value={subdomain}
+                    onChange={e => handleSubdomainChange(e.target.value)}
+                    invalid={subdomainInvalid()}
+                    invalidText={subdomainError ?? ''}
+                    required
+                  />
+                  {subdomainStatus === 'available' && (
+                    <p style={{ fontSize: '0.75rem', color: '#24a148', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <CheckmarkFilled size={14} /> Available
+                    </p>
+                  )}
+                  {subdomainStatus === 'taken' && (
+                    <p style={{ fontSize: '0.75rem', color: '#da1e28', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <WarningFilled size={14} /> Already taken
+                    </p>
+                  )}
+                </div>
                 <Select id="industry" labelText="Industry" helperText="Helps us tailor default templates for your sector"
                   value={industry} onChange={e => setIndustry(e.target.value)}>
                   <SelectItem value="" text="Select industry (optional)" />
@@ -258,7 +359,12 @@ export default function RegisterPage() {
                   <Button kind="ghost" renderIcon={ArrowLeft} onClick={() => { setStep('account'); setError(null) }} disabled={loading}>
                     Back
                   </Button>
-                  <Button type="submit" renderIcon={ArrowRight} disabled={loading} style={{ flex: 1, maxWidth: '100%' }}>
+                  <Button
+                    type="submit"
+                    renderIcon={ArrowRight}
+                    disabled={loading || subdomainStatus === 'checking' || subdomainStatus === 'taken' || subdomainStatus === 'invalid'}
+                    style={{ flex: 1, maxWidth: '100%' }}
+                  >
                     {loading ? 'Creating account…' : 'Create account'}
                   </Button>
                 </div>

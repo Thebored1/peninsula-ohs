@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { getOrgId } from '@/lib/supabase/get-org-id'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
@@ -427,6 +428,29 @@ export async function createReviewWorkflow(formData: FormData): Promise<{ error?
 
   revalidatePath('/documents/workflows')
   redirect('/documents/workflows')
+}
+
+export async function getDocumentDownloadUrl(
+  documentId: string
+): Promise<{ url?: string; error?: string }> {
+  const supabase = await createClient()
+
+  // RLS automatically scopes this to the user's org — if the doc isn't theirs it returns null
+  const { data: doc } = await supabase
+    .from('documents')
+    .select('storage_path, file_name')
+    .eq('id', documentId)
+    .maybeSingle()
+
+  if (!doc) return { error: 'Document not found' }
+  if (!doc.storage_path) return { error: 'No file attached to this document' }
+
+  const { data: signed, error } = await supabaseAdmin.storage
+    .from('org-documents')
+    .createSignedUrl(doc.storage_path, 60) // 60-second expiry
+
+  if (error) return { error: error.message }
+  return { url: signed.signedUrl }
 }
 
 export async function updateDocumentSettings(formData: FormData): Promise<{ error?: string }> {

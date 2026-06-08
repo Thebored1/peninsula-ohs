@@ -55,9 +55,10 @@ interface Notification {
 interface AppShellProps {
   children: React.ReactNode
   userEmail?: string
+  impersonating?: { orgName: string } | null
 }
 
-export function AppShell({ children, userEmail }: AppShellProps) {
+export function AppShell({ children, userEmail, impersonating }: AppShellProps) {
   const router = useRouter()
   const pathname = usePathname()
   const [isSideNavExpanded, setIsSideNavExpanded] = useState(true)
@@ -141,8 +142,37 @@ export function AppShell({ children, userEmail }: AppShellProps) {
     return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })
   }
 
+  async function handleExitImpersonation() {
+    await fetch('/api/admin/exit-impersonation', { method: 'POST' })
+    router.push('/admin/organisations')
+    router.refresh()
+  }
+
   return (
     <Theme theme="white">
+      {impersonating && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 10000,
+          backgroundColor: '#f1c21b', color: '#161616',
+          padding: '0.5rem 1rem',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          fontSize: '0.875rem', fontWeight: 500,
+        }}>
+          <span>
+            Viewing as Peninsula Support — Organisation: <strong>{impersonating.orgName}</strong>
+          </span>
+          <button
+            onClick={handleExitImpersonation}
+            style={{
+              background: 'none', border: '1px solid #161616', cursor: 'pointer',
+              padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 600,
+            }}
+          >
+            Exit
+          </button>
+        </div>
+      )}
+      <div style={impersonating ? { paddingTop: '2.25rem' } : undefined}>
       <SkipToContent />
       <Header aria-label="Peninsula OHS">
         <HeaderMenuButton
@@ -562,6 +592,7 @@ export function AppShell({ children, userEmail }: AppShellProps) {
       <Content style={{ paddingTop: '3rem' }}>
         {children}
       </Content>
+      </div>
     </Theme>
   )
 }

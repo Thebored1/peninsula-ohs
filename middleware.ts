@@ -1,9 +1,32 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { validateSuperAdminSession } from '@/lib/super-admin/session'
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
+  const { pathname } = request.nextUrl
+  const isPublicAsset = pathname.startsWith('/_next') || pathname.includes('.')
+
+  if (isPublicAsset) return supabaseResponse
+
+  // ── Super admin routes (/admin/*) ────────────────────────────────────────
+  if (pathname.startsWith('/admin')) {
+    if (pathname === '/admin/login') return supabaseResponse
+    const saToken = request.cookies.get('peninsula_sa_token')?.value
+    if (!saToken) {
+      return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
+    const admin = await validateSuperAdminSession(saToken)
+    if (!admin) {
+      const response = NextResponse.redirect(new URL('/admin/login', request.url))
+      response.cookies.delete('peninsula_sa_token')
+      return response
+    }
+    return supabaseResponse
+  }
+
+  // ── Platform routes — Supabase auth ──────────────────────────────────────
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -25,23 +48,18 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const { pathname } = request.nextUrl
   const isAuthRoute =
     pathname.startsWith('/login') ||
     pathname.startsWith('/register') ||
     pathname.startsWith('/forgot-password') ||
     pathname.startsWith('/auth')
-  const isPublicAsset = pathname.startsWith('/_next') || pathname.includes('.')
 
-  if (isPublicAsset) return supabaseResponse
-
-  // AUTH TEMPORARILY DISABLED — re-enable before going to production
-  // if (!user && !isAuthRoute) {
-  //   return NextResponse.redirect(new URL('/login', request.url))
-  // }
-  // if (user && isAuthRoute) {
-  //   return NextResponse.redirect(new URL('/dashboard', request.url))
-  // }
+  if (!user && !isAuthRoute) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+  if (user && isAuthRoute) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
 
   return supabaseResponse
 }
