@@ -46,20 +46,8 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
-
-  const isAuthRoute =
-    pathname.startsWith('/login') ||
-    pathname.startsWith('/register') ||
-    pathname.startsWith('/forgot-password') ||
-    pathname.startsWith('/auth')
-
-  if (!user && !isAuthRoute) {
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
-  if (user && isAuthRoute) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
-  }
+  // AUTH TEMPORARILY DISABLED — all platform routes accessible without login
+  // await supabase.auth.getUser()
 
   return supabaseResponse
 }
