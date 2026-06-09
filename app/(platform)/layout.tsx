@@ -16,13 +16,14 @@ export default async function PlatformLayout({ children }: { children: React.Rea
 
   if (!profile) redirect('/register')
 
-  // Hard-block: redirect to onboarding until first site is created
-  const { count: siteCount } = await supabase
-    .from('sites')
-    .select('id', { count: 'exact', head: true })
-    .eq('organisation_id', profile.organisation_id)
+  // Hard-block: redirect to onboarding until setup is complete
+  const { data: org } = await supabase
+    .from('organisations')
+    .select('onboarding_completed_at')
+    .eq('id', profile.organisation_id)
+    .single()
 
-  if ((siteCount ?? 0) === 0) redirect('/onboarding')
+  if (!org?.onboarding_completed_at) redirect('/onboarding')
 
   // Detect active impersonation session (set by super admin panel)
   const cookieStore = await cookies()

@@ -14,13 +14,14 @@ export default async function OnboardingPage() {
     .maybeSingle()
   if (!profile) redirect('/register')
 
-  // If org already has a site, onboarding is complete
-  const { count: siteCount } = await supabase
-    .from('sites')
-    .select('id', { count: 'exact', head: true })
-    .eq('organisation_id', profile.organisation_id)
+  // If onboarding has been completed, send to dashboard
+  const { data: org } = await supabase
+    .from('organisations')
+    .select('onboarding_completed_at')
+    .eq('id', profile.organisation_id)
+    .single()
 
-  if ((siteCount ?? 0) > 0) redirect('/dashboard')
+  if (org?.onboarding_completed_at) redirect('/dashboard')
 
   // Load roles for invite step
   const { data: roles } = await supabase
