@@ -3,7 +3,7 @@
 -- =============================================================
 -- Stores province-specific employment law rules used by the
 -- hiring workflow compliance checker (Step 4).
--- NULL organisation_id = Peninsula system rule (visible to all orgs).
+-- NULL organisation_id = EXXIO system rule (visible to all orgs).
 -- Non-NULL = org override for that province.
 -- =============================================================
 

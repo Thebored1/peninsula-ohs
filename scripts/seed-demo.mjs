@@ -1,7 +1,7 @@
 // =============================================================
-// PENINSULA OHS — Demo Data Seed Script
+// EXXIO — Demo Data Seed Script
 // Run: node --env-file=.env.local scripts/seed-demo.mjs
-// Reset: delete org "Peninsula Demo Pty Ltd" in Supabase, then re-run
+// Reset: delete org "EXXIO Demo Pty Ltd" in Supabase, then re-run
 // =============================================================
 
 import { createClient } from '@supabase/supabase-js'
@@ -18,7 +18,7 @@ const sb = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 })
 
-const DEMO_ORG_NAME = 'Peninsula Demo Pty Ltd'
+const DEMO_ORG_NAME = 'EXXIO Demo Pty Ltd'
 const DEMO_PASSWORD = 'DemoPass123!'
 
 function die(label, error) {
@@ -48,14 +48,14 @@ async function fidN(table, col, val) {
 // MAIN
 // ================================================================
 async function main() {
-  console.log('\n🏗  Peninsula OHS — Demo Data Seed\n')
+  console.log('\n🏗  EXXIO — Demo Data Seed\n')
 
   const DEMO_EMAILS = [
-    'sarah@peninsula.health',
-    'david@peninsula.health',
-    'james@peninsula.health',
-    'michael@peninsula.health',
-    'emma@peninsula.health',
+    'sarah@exxio.ai',
+    'david@exxio.ai',
+    'james@exxio.ai',
+    'michael@exxio.ai',
+    'emma@exxio.ai',
   ]
 
   // Sweep GoTrue + DB for any previous partial seed
@@ -123,11 +123,11 @@ async function main() {
   }
 
   const [adminId, execId, hseId, supId, workerId] = [
-    uid['sarah@peninsula.health'],
-    uid['david@peninsula.health'],
-    uid['james@peninsula.health'],
-    uid['michael@peninsula.health'],
-    uid['emma@peninsula.health'],
+    uid['sarah@exxio.ai'],
+    uid['david@exxio.ai'],
+    uid['james@exxio.ai'],
+    uid['michael@exxio.ai'],
+    uid['emma@exxio.ai'],
   ]
 
   // ============================================================
@@ -139,11 +139,11 @@ async function main() {
   const { error: orgErr } = await sb.from('organisations').insert({
     id: orgId,
     name: DEMO_ORG_NAME,
-    slug: 'peninsula-demo',
+    slug: 'exxio-demo',
     subdomain: 'demo',
     industry: 'construction',
     timezone: 'Australia/Sydney',
-    contact_email: 'sarah@peninsula.health',
+    contact_email: 'sarah@exxio.ai',
     onboarding_completed_at: new Date().toISOString(),
     created_by: adminId,
   })
@@ -207,11 +207,11 @@ async function main() {
 
   // User profiles
   await ins('user_profiles', [
-    { id: adminId,  organisation_id: orgId, first_name: 'Sarah',   last_name: 'Chen',   email: 'sarah@peninsula.health',      job_title: 'Safety Manager',      employment_type: 'full_time', primary_site_id: sHQId,  primary_department_id: dSafHQ,  hire_date: '2023-03-15' },
-    { id: execId,   organisation_id: orgId, first_name: 'David',   last_name: 'Patel',  email: 'david@peninsula.health',       job_title: 'General Manager',     employment_type: 'full_time', primary_site_id: sHQId,  primary_department_id: dOpsHQ,  hire_date: '2022-01-10' },
-    { id: hseId,    organisation_id: orgId, first_name: 'James',   last_name: 'Nguyen', email: 'james@peninsula.health',        job_title: 'HSE Officer',         employment_type: 'full_time', primary_site_id: sCSId,  primary_department_id: dSafCS,  hire_date: '2023-06-01' },
-    { id: supId,    organisation_id: orgId, first_name: 'Michael', last_name: 'Torres', email: 'michael@peninsula.health', job_title: 'Site Supervisor',     employment_type: 'full_time', primary_site_id: sCSId,  primary_department_id: dConsCS, hire_date: '2023-09-01' },
-    { id: workerId, organisation_id: orgId, first_name: 'Emma',    last_name: 'Wilson', email: 'emma@peninsula.health',     job_title: 'Construction Worker', employment_type: 'full_time', primary_site_id: sCSId,  primary_department_id: dConsCS, hire_date: '2024-02-14' },
+    { id: adminId,  organisation_id: orgId, first_name: 'Sarah',   last_name: 'Chen',   email: 'sarah@exxio.ai',   job_title: 'Safety Manager',      employment_type: 'full_time', primary_site_id: sHQId,  primary_department_id: dSafHQ,  hire_date: '2023-03-15' },
+    { id: execId,   organisation_id: orgId, first_name: 'David',   last_name: 'Patel',  email: 'david@exxio.ai',   job_title: 'General Manager',     employment_type: 'full_time', primary_site_id: sHQId,  primary_department_id: dOpsHQ,  hire_date: '2022-01-10' },
+    { id: hseId,    organisation_id: orgId, first_name: 'James',   last_name: 'Nguyen', email: 'james@exxio.ai',   job_title: 'HSE Officer',         employment_type: 'full_time', primary_site_id: sCSId,  primary_department_id: dSafCS,  hire_date: '2023-06-01' },
+    { id: supId,    organisation_id: orgId, first_name: 'Michael', last_name: 'Torres', email: 'michael@exxio.ai', job_title: 'Site Supervisor',     employment_type: 'full_time', primary_site_id: sCSId,  primary_department_id: dConsCS, hire_date: '2023-09-01' },
+    { id: workerId, organisation_id: orgId, first_name: 'Emma',    last_name: 'Wilson', email: 'emma@exxio.ai',    job_title: 'Construction Worker', employment_type: 'full_time', primary_site_id: sCSId,  primary_department_id: dConsCS, hire_date: '2024-02-14' },
   ], 'user_profiles (5)')
 
   // Roles
@@ -286,9 +286,9 @@ async function main() {
   ], 'training_courses (2)')
 
   await ins('training_records', [
-    { organisation_id: orgId, worker_id: hseId,    course_id: tc1, completed_date: '2026-01-10', expiry_date: '2027-01-10', delivery_method: 'classroom', provider: 'Peninsula OHS',       trainer_name: 'Sarah Chen',    status: 'current', created_by: adminId },
-    { organisation_id: orgId, worker_id: supId,    course_id: tc1, completed_date: '2026-01-15', expiry_date: '2027-01-15', delivery_method: 'classroom', provider: 'Peninsula OHS',       trainer_name: 'Sarah Chen',    status: 'current', created_by: adminId },
-    { organisation_id: orgId, worker_id: workerId, course_id: tc1, completed_date: '2026-02-01', expiry_date: '2027-02-01', delivery_method: 'classroom', provider: 'Peninsula OHS',       trainer_name: 'James Nguyen',  status: 'current', created_by: adminId },
+    { organisation_id: orgId, worker_id: hseId,    course_id: tc1, completed_date: '2026-01-10', expiry_date: '2027-01-10', delivery_method: 'classroom', provider: 'EXXIO',       trainer_name: 'Sarah Chen',    status: 'current', created_by: adminId },
+    { organisation_id: orgId, worker_id: supId,    course_id: tc1, completed_date: '2026-01-15', expiry_date: '2027-01-15', delivery_method: 'classroom', provider: 'EXXIO',       trainer_name: 'Sarah Chen',    status: 'current', created_by: adminId },
+    { organisation_id: orgId, worker_id: workerId, course_id: tc1, completed_date: '2026-02-01', expiry_date: '2027-02-01', delivery_method: 'classroom', provider: 'EXXIO',       trainer_name: 'James Nguyen',  status: 'current', created_by: adminId },
     { organisation_id: orgId, worker_id: supId,    course_id: tc2, completed_date: '2025-11-20', expiry_date: '2027-11-20', delivery_method: 'blended',   provider: 'Heights Pro Training', trainer_name: 'Rob Davies',    status: 'current', created_by: adminId },
     { organisation_id: orgId, worker_id: workerId, course_id: tc2, completed_date: '2025-12-05', expiry_date: '2027-12-05', delivery_method: 'blended',   provider: 'Heights Pro Training', trainer_name: 'Rob Davies',    status: 'current', created_by: adminId },
   ], 'training_records (5)')
@@ -305,9 +305,9 @@ async function main() {
   ], 'worker_health_profiles (2)')
 
   await ins('health_check_records', [
-    { user_id: supId,    organisation_id: orgId, surveillance_type_id: hstAudio, result: 'fit',                  check_date: '2026-03-10', next_check_due: '2027-03-10', provider_name: 'Peninsula Occupational Health', is_baseline: false, restrictions_issued: false, recorded_by: hseId },
-    { user_id: workerId, organisation_id: orgId, surveillance_type_id: hstAudio, result: 'fit',                  check_date: '2026-03-12', next_check_due: '2027-03-12', provider_name: 'Peninsula Occupational Health', is_baseline: true,  restrictions_issued: false, recorded_by: hseId },
-    { user_id: workerId, organisation_id: orgId, surveillance_type_id: hstSpiro, result: 'fit_with_restrictions', check_date: '2026-03-12', next_check_due: '2026-09-12', provider_name: 'Peninsula Occupational Health', result_notes: 'Mild airways sensitivity – avoid silica dust without P2 respirator', restrictions_issued: true, is_baseline: false, recorded_by: hseId },
+    { user_id: supId,    organisation_id: orgId, surveillance_type_id: hstAudio, result: 'fit',                  check_date: '2026-03-10', next_check_due: '2027-03-10', provider_name: 'EXXIO Occupational Health', is_baseline: false, restrictions_issued: false, recorded_by: hseId },
+    { user_id: workerId, organisation_id: orgId, surveillance_type_id: hstAudio, result: 'fit',                  check_date: '2026-03-12', next_check_due: '2027-03-12', provider_name: 'EXXIO Occupational Health', is_baseline: true,  restrictions_issued: false, recorded_by: hseId },
+    { user_id: workerId, organisation_id: orgId, surveillance_type_id: hstSpiro, result: 'fit_with_restrictions', check_date: '2026-03-12', next_check_due: '2026-09-12', provider_name: 'EXXIO Occupational Health', result_notes: 'Mild airways sensitivity – avoid silica dust without P2 respirator', restrictions_issued: true, is_baseline: false, recorded_by: hseId },
   ], 'health_check_records (3)')
 
   // PPE issuance

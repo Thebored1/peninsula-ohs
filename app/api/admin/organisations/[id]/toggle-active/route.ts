@@ -6,7 +6,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const token = request.cookies.get('lumis_sa_token')?.value
+  const token = request.cookies.get('exxio_sa_token')?.value
   const admin = token ? await validateSuperAdminSession(token) : null
   if (!admin) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
 

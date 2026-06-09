@@ -19,7 +19,7 @@ async function sendEmail(opts: SendEmailOptions): Promise<{ id?: string; error?:
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      from:    process.env.BGC_EMAIL_FROM ?? 'Background Checks <noreply@lumis.app>',
+      from:    process.env.BGC_EMAIL_FROM ?? 'Background Checks <noreply@exxio.ai>',
       to:      [opts.to],
       subject: opts.subject,
       html:    opts.html,

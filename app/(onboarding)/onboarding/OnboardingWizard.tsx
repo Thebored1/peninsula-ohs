@@ -367,7 +367,7 @@ export default function OnboardingWizard({ roles }: { roles: Role[] }) {
               You're all set!
             </h2>
             <p style={{ fontSize: '0.875rem', color: '#525252' }}>
-              Your workspace is ready. Start using Lumis.
+              Your workspace is ready. Start using EXXIO.
             </p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>

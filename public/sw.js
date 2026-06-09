@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lumis-v1'
+const CACHE_NAME = 'exxio-v1'
 
 // Precache the offline fallback page on install
 self.addEventListener('install', (event) => {

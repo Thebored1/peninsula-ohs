@@ -27,7 +27,7 @@ export default async function PlatformLayout({ children }: { children: React.Rea
 
   // Detect active impersonation session (set by super admin panel)
   const cookieStore = await cookies()
-  const impersonatingCookie = cookieStore.get('lumis_impersonating')?.value
+  const impersonatingCookie = cookieStore.get('exxio_impersonating')?.value
   let impersonating: { orgName: string } | null = null
   if (impersonatingCookie) {
     try {

@@ -1,4 +1,4 @@
-# Peninsula OHS Platform — Incomplete Features
+# EXXIO Platform — Incomplete Features
 
 > **MVP Status:** The current build (16 modules, 175 tables, 130+ functions) is sufficient for MVP launch.
 > The items below are post-MVP enhancements prioritised by OHS compliance impact.

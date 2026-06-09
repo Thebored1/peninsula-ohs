@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Lumis',
-    short_name: 'Lumis',
+    name: 'EXXIO',
+    short_name: 'EXXIO',
     description: 'Occupational health and safety management for field workers and managers',
     start_url: '/',
     display: 'standalone',

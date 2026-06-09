@@ -2,7 +2,7 @@
 -- HIRING MODULE: HR Document Templates — Schema
 -- =============================================================
 -- Stores reusable document templates for the hiring workflow.
--- NULL organisation_id = Peninsula system template (all orgs).
+-- NULL organisation_id = EXXIO system template (all orgs).
 -- Non-NULL = org-created custom template.
 -- =============================================================
 

@@ -72,7 +72,7 @@ CREATE TABLE integrations (
 
 -- =============================================================
 -- INTEGRATION FIELD MAPPINGS
--- Maps source system fields to Peninsula schema fields.
+-- Maps source system fields to EXXIO schema fields.
 -- transformation jsonb: {"trim":true,"lowercase":true,"format":"date"}
 -- =============================================================
 
@@ -81,8 +81,8 @@ CREATE TABLE integration_field_mappings (
   integration_id  uuid        NOT NULL REFERENCES integrations(id) ON DELETE CASCADE,
   organisation_id uuid        NOT NULL REFERENCES organisations(id),
   source_field    text        NOT NULL,   -- field name in the external system
-  target_table    text        NOT NULL,   -- Peninsula table name
-  target_field    text        NOT NULL,   -- Peninsula column name
+  target_table    text        NOT NULL,   -- EXXIO table name
+  target_field    text        NOT NULL,   -- EXXIO column name
   transformation  jsonb       NOT NULL DEFAULT '{}',
   is_required     boolean     NOT NULL DEFAULT false,
   is_active       boolean     NOT NULL DEFAULT true,
@@ -182,7 +182,7 @@ CREATE TABLE webhook_event_types (
 -- WEBHOOK ENDPOINTS
 -- A registered URL that receives HTTP POST events.
 -- signing_secret is used to compute HMAC-SHA256 signatures
--- on every delivery (X-Peninsula-Signature header).
+-- on every delivery (X-EXXIO-Signature header).
 -- =============================================================
 
 CREATE TABLE webhook_endpoints (

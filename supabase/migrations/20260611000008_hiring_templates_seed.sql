@@ -1,7 +1,7 @@
 -- =============================================================
 -- HIRING MODULE: HR Document Templates — System Seed Data
 -- =============================================================
--- 4 Peninsula-managed templates available to all organisations.
+-- 4 EXXIO-managed templates available to all organisations.
 -- province_clauses JSON contains jurisdiction-specific text
 -- that is appended to the document body for the hire's province.
 -- =============================================================

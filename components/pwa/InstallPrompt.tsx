@@ -72,7 +72,7 @@ export function InstallPrompt() {
         <Download size={16} />
       </div>
       <p style={{ fontSize: '0.875rem', margin: 0, whiteSpace: 'nowrap' }}>
-        Install Lumis for quick access
+        Install EXXIO for quick access
       </p>
       <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
         <Button kind="primary" size="sm" onClick={handleInstall}>

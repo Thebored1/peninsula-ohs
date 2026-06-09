@@ -1,5 +1,5 @@
 SELECT json_build_object(
-  'project', 'peninsula',
+  'project', 'exxio',
   'exported_at', now()::text,
   'table_count', COUNT(DISTINCT t.table_name),
   'tables', json_agg(

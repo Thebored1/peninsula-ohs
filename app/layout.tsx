@@ -26,12 +26,12 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'Lumis — Health & Safety Platform',
+  title: 'EXXIO — Health & Safety Platform',
   description: 'Occupational health and safety management',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Lumis',
+    title: 'EXXIO',
   },
   icons: {
     apple: '/icons/icon.svg',

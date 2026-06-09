@@ -13,14 +13,14 @@ export async function middleware(request: NextRequest) {
   // ── Super admin routes (/admin/*) ────────────────────────────────────────
   if (pathname.startsWith('/admin')) {
     if (pathname === '/admin/login') return supabaseResponse
-    const saToken = request.cookies.get('lumis_sa_token')?.value
+    const saToken = request.cookies.get('exxio_sa_token')?.value
     if (!saToken) {
       return NextResponse.redirect(new URL('/admin/login', request.url))
     }
     const admin = await validateSuperAdminSession(saToken)
     if (!admin) {
       const response = NextResponse.redirect(new URL('/admin/login', request.url))
-      response.cookies.delete('lumis_sa_token')
+      response.cookies.delete('exxio_sa_token')
       return response
     }
     return supabaseResponse

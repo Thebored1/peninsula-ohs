@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   const token = await createSuperAdminSession(admin.id, ip, userAgent)
 
   const response = NextResponse.json({ ok: true })
-  response.cookies.set('lumis_sa_token', token, {
+  response.cookies.set('exxio_sa_token', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',

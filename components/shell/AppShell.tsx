@@ -162,7 +162,7 @@ export function AppShell({ children, userEmail, impersonating }: AppShellProps) 
           fontSize: '0.875rem', fontWeight: 500,
         }}>
           <span>
-            Viewing as Lumis Support — Organisation: <strong>{impersonating.orgName}</strong>
+            Viewing as EXXIO Support — Organisation: <strong>{impersonating.orgName}</strong>
           </span>
           <button
             onClick={handleExitImpersonation}
@@ -177,14 +177,14 @@ export function AppShell({ children, userEmail, impersonating }: AppShellProps) 
       )}
       <div style={impersonating ? { paddingTop: '2.25rem' } : undefined}>
       <SkipToContent />
-      <Header aria-label="Lumis">
+      <Header aria-label="EXXIO">
         <HeaderMenuButton
           aria-label={isSideNavExpanded ? 'Close navigation' : 'Open navigation'}
           onClick={() => setIsSideNavExpanded(!isSideNavExpanded)}
           isActive={isSideNavExpanded}
         />
         <HeaderName href="/dashboard" prefix="">
-          Lumis
+          EXXIO
         </HeaderName>
         <HeaderGlobalBar>
           <HeaderGlobalAction

@@ -9,7 +9,7 @@ export default async function AdminLayout({
   children: React.ReactNode
 }) {
   const cookieStore = await cookies()
-  const token = cookieStore.get('lumis_sa_token')?.value
+  const token = cookieStore.get('exxio_sa_token')?.value
 
   let adminName: string | null = null
   if (token) {
@@ -40,7 +40,7 @@ export default async function AdminLayout({
                     stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
-              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#f4f4f4' }}>Lumis Admin</span>
+              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#f4f4f4' }}>EXXIO Admin</span>
             </div>
             <nav style={{ display: 'flex', gap: '1rem' }}>
               {[

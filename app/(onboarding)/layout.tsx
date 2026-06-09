@@ -38,7 +38,7 @@ export default async function OnboardingLayout({ children }: { children: React.R
               </svg>
             </div>
             <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#161616' }}>
-              Set up Lumis
+              Set up EXXIO
             </h1>
             <p style={{ fontSize: '0.875rem', color: '#525252', marginTop: '0.25rem' }}>
               Let's get your workspace ready
