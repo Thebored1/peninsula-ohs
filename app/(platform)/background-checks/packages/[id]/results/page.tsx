@@ -27,7 +27,8 @@ function formatDate(iso: string | null) {
   return new Date(iso).toLocaleDateString('en-CA', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-export default async function ResultsPage({ params }: { params: { id: string } }) {
+export default async function ResultsPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = await createClient()
   const orgId = await getOrgId()
   if (!orgId) return <div style={{ padding: '2rem' }}><p>No organisation found.</p></div>
@@ -41,7 +42,7 @@ export default async function ResultsPage({ params }: { params: { id: string } }
       bgc_adjudications(id, recommendation, rationale, human_rights_considered, adjudicated_at, digital_signature),
       bgc_adverse_action_notices(id, notice_type, sent_at, dispute_window_closes_at, final_decision_at)
     `)
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('organisation_id', orgId)
     .single()
 
@@ -63,7 +64,7 @@ export default async function ResultsPage({ params }: { params: { id: string } }
     <div style={{ padding: '2rem' }}>
       <Breadcrumb style={{ marginBottom: '1rem' }}>
         <BreadcrumbItem href="/background-checks">Background Checks</BreadcrumbItem>
-        <BreadcrumbItem href={`/background-checks/packages/${params.id}`}>{pkg.package_number}</BreadcrumbItem>
+        <BreadcrumbItem href={`/background-checks/packages/${id}`}>{pkg.package_number}</BreadcrumbItem>
         <BreadcrumbItem isCurrentPage>Results</BreadcrumbItem>
       </Breadcrumb>
 
@@ -124,7 +125,7 @@ export default async function ResultsPage({ params }: { params: { id: string } }
       {/* Adverse action flow (only shown when record found) */}
       {hasRecordFound && !existingAdjudication && (
         <AdverseActionFlow
-          packageId={params.id}
+          packageId={id}
           hasPreNotice={hasPreNotice}
           hasFinalNotice={hasFinalNotice}
           preNoticeDisputeWindowClosesAt={(preNotice?.dispute_window_closes_at as string) ?? null}
@@ -133,7 +134,7 @@ export default async function ResultsPage({ params }: { params: { id: string } }
 
       {/* Adjudication */}
       {!existingAdjudication && (pkg.status === 'review_pending' || pkg.status === 'adjudicated') && (
-        <AdjudicationForm packageId={params.id} />
+        <AdjudicationForm packageId={id} />
       )}
 
       {existingAdjudication && (

@@ -127,7 +127,7 @@ export default async function ReportsPage() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <ExportCSVButton orgId={orgId} />
+          {orgId && <ExportCSVButton orgId={orgId} />}
           <NewButton href="/reports/builder" label="Report Builder" kind="ghost" />
         </div>
       </div>

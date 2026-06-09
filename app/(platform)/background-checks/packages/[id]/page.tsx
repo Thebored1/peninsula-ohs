@@ -31,7 +31,8 @@ function formatDate(iso: string | null) {
   return new Date(iso).toLocaleDateString('en-CA', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-export default async function PackageDetailPage({ params }: { params: { id: string } }) {
+export default async function PackageDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = await createClient()
   const orgId = await getOrgId()
   if (!orgId) return <div style={{ padding: '2rem' }}><p>No organisation found.</p></div>
@@ -45,7 +46,7 @@ export default async function PackageDetailPage({ params }: { params: { id: stri
       bgc_adjudications(id, recommendation, rationale, adjudicated_at, human_rights_considered),
       bgc_adverse_action_notices(id, notice_type, sent_at, dispute_window_closes_at, final_decision_at)
     `)
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('organisation_id', orgId)
     .single()
 

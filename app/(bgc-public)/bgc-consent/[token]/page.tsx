@@ -9,9 +9,10 @@ function getAdminClient() {
   )
 }
 
-export default async function ConsentPage({ params }: { params: { token: string } }) {
+export default async function ConsentPage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params
   const crypto = require('crypto') as typeof import('crypto')
-  const tokenHash = crypto.createHash('sha256').update(params.token).digest('hex')
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
 
   const admin = getAdminClient()
 
@@ -91,7 +92,7 @@ export default async function ConsentPage({ params }: { params: { token: string 
 
   return (
     <ConsentForm
-      token={params.token}
+      token={token}
       packageId={packageId}
       candidateName={`${pkg.candidate_first_name} ${pkg.candidate_last_name}`}
       positionTitle={pkg.position_title ?? ''}
