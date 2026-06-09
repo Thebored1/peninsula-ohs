@@ -22,7 +22,7 @@ export async function registerUser(data: {
 }): Promise<{ error?: string }> {
   // Validate subdomain format server-side (defense in depth)
   const subdomainClean = data.subdomain.toLowerCase().trim()
-  if (!/^[a-z0-9]([a-z0-9-]{1,30}[a-z0-9])?$/.test(subdomainClean)) {
+  if (!/^[a-z0-9]([a-z0-9-]{0,30}[a-z0-9])?$/.test(subdomainClean)) {
     return { error: 'Invalid subdomain format.' }
   }
   if (RESERVED_SUBDOMAINS.has(subdomainClean)) {

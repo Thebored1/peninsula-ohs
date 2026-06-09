@@ -15,10 +15,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ available: false, error: 'Required' })
   }
 
-  if (!/^[a-z0-9]([a-z0-9-]{1,30}[a-z0-9])?$/.test(subdomain)) {
+  if (!/^[a-z0-9]([a-z0-9-]{0,30}[a-z0-9])?$/.test(subdomain)) {
     return NextResponse.json({
       available: false,
-      error: 'Only lowercase letters, numbers, and hyphens. 3–32 characters.',
+      error: 'Only lowercase letters, numbers, and hyphens. 2–32 characters.',
     })
   }
 
