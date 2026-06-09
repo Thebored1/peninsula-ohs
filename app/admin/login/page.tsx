@@ -51,7 +51,7 @@ export default function AdminLoginPage() {
                 stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
-          <h1 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#f4f4f4' }}>Peninsula Admin</h1>
+          <h1 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#f4f4f4' }}>Lumis Admin</h1>
           <p style={{ fontSize: '0.875rem', color: '#8d8d8d', marginTop: '0.25rem' }}>Internal access only</p>
         </div>
 
@@ -66,7 +66,7 @@ export default function AdminLoginPage() {
           <Form onSubmit={handleSubmit}>
             <Stack gap={5}>
               <TextInput
-                id="email" labelText="Email" type="email" placeholder="admin@peninsula.com"
+                id="email" labelText="Email" type="email" placeholder="admin@lumis.app"
                 value={email} onChange={e => setEmail(e.target.value)} required autoFocus
               />
               <PasswordInput

@@ -53,7 +53,7 @@ export default async function HrTemplatesPage() {
         )}
       </Tile>
       <p style={{ fontSize: '0.75rem', color: '#6f6f6f', marginTop: '1rem' }}>
-        <Tag type="blue" size="sm">System</Tag>{' '}templates are Peninsula-managed. <Tag type="gray" size="sm">Custom</Tag>{' '}templates are created by your organisation.
+        <Tag type="blue" size="sm">System</Tag>{' '}templates are Lumis-managed. <Tag type="gray" size="sm">Custom</Tag>{' '}templates are created by your organisation.
       </p>
     </div>
   )

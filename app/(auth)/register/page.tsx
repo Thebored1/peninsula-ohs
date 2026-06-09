@@ -238,10 +238,10 @@ export default function RegisterPage() {
 
   function subdomainHelperText() {
     if (subdomainStatus === 'checking') return 'Checking availability…'
-    if (subdomainStatus === 'available') return `✓ ${subdomain}.peninsula.app is available`
+    if (subdomainStatus === 'available') return `✓ ${subdomain}.lumis.app is available`
     if (subdomainStatus === 'taken') return subdomainError ?? 'Already taken'
     if (subdomainStatus === 'invalid') return subdomainError ?? 'Invalid format'
-    if (subdomain) return `${subdomain}.peninsula.app`
+    if (subdomain) return `${subdomain}.lumis.app`
     return 'Only letters, numbers, and hyphens'
   }
 
@@ -269,7 +269,7 @@ export default function RegisterPage() {
             </svg>
           </div>
           <h1 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#161616', marginBottom: '0.125rem' }}>Create your account</h1>
-          <p style={{ fontSize: '0.875rem', color: '#525252' }}>Peninsula Health &amp; Safety Platform</p>
+          <p style={{ fontSize: '0.875rem', color: '#525252' }}>Lumis</p>
         </div>
 
         <Tile style={{ padding: '2rem' }}>

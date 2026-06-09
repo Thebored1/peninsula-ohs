@@ -53,7 +53,7 @@ export default async function AdminOrgDetailPage({
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#f4f4f4', marginBottom: '0.25rem' }}>{org.name}</h1>
           <p style={{ fontSize: '0.875rem', color: '#8d8d8d' }}>
-            {org.subdomain}.peninsula.app · {org.industry ?? 'No industry'} · {org.subscription_plan}
+            {org.subdomain}.lumis.app · {org.industry ?? 'No industry'} · {org.subscription_plan}
           </p>
         </div>
         <OrgDetailActions orgId={org.id} orgName={org.name} isActive={org.is_active} />

@@ -40,6 +40,7 @@ import {
   Education,
   Alarm,
   Collaborate,
+  Security,
 } from '@carbon/icons-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -161,7 +162,7 @@ export function AppShell({ children, userEmail, impersonating }: AppShellProps) 
           fontSize: '0.875rem', fontWeight: 500,
         }}>
           <span>
-            Viewing as Peninsula Support — Organisation: <strong>{impersonating.orgName}</strong>
+            Viewing as Lumis Support — Organisation: <strong>{impersonating.orgName}</strong>
           </span>
           <button
             onClick={handleExitImpersonation}
@@ -176,14 +177,14 @@ export function AppShell({ children, userEmail, impersonating }: AppShellProps) 
       )}
       <div style={impersonating ? { paddingTop: '2.25rem' } : undefined}>
       <SkipToContent />
-      <Header aria-label="Peninsula OHS">
+      <Header aria-label="Lumis">
         <HeaderMenuButton
           aria-label={isSideNavExpanded ? 'Close navigation' : 'Open navigation'}
           onClick={() => setIsSideNavExpanded(!isSideNavExpanded)}
           isActive={isSideNavExpanded}
         />
-        <HeaderName href="/dashboard" prefix="Peninsula">
-          OHS
+        <HeaderName href="/dashboard" prefix="">
+          Lumis
         </HeaderName>
         <HeaderGlobalBar>
           <HeaderGlobalAction
@@ -449,6 +450,19 @@ export function AppShell({ children, userEmail, impersonating }: AppShellProps) 
             <SideNavMenuItem href="/hiring/templates" isActive={isActive('/hiring/templates')} element={Link}>Document Templates</SideNavMenuItem>
             <SideNavMenuItem href="/hiring/onboarding" isActive={isActive('/hiring/onboarding') && !isActive('/hiring/onboarding/templates')} element={Link}>Onboarding</SideNavMenuItem>
             <SideNavMenuItem href="/hiring/onboarding/templates" isActive={isActive('/hiring/onboarding/templates')} element={Link}>Onboarding Templates</SideNavMenuItem>
+          </SideNavMenu>
+
+          <SideNavMenu
+            title="Background Checks"
+            renderIcon={Security}
+            isActive={isActive('/background-checks')}
+            defaultExpanded={isActive('/background-checks')}
+          >
+            <SideNavMenuItem href="/background-checks" isActive={pathname === '/background-checks'} element={Link}>Overview</SideNavMenuItem>
+            <SideNavMenuItem href="/background-checks/packages" isActive={isActive('/background-checks/packages')} element={Link}>Packages</SideNavMenuItem>
+            <SideNavMenuItem href="/background-checks/reference-checks" isActive={isActive('/background-checks/reference-checks')} element={Link}>References</SideNavMenuItem>
+            <SideNavMenuItem href="/background-checks/licences" isActive={isActive('/background-checks/licences')} element={Link}>Licences</SideNavMenuItem>
+            <SideNavMenuItem href="/background-checks/settings" isActive={isActive('/background-checks/settings')} element={Link}>Settings</SideNavMenuItem>
           </SideNavMenu>
 
           <SideNavMenu

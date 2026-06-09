@@ -19,6 +19,7 @@ const PROVINCES = [
   { code: 'SK', name: 'Saskatchewan' }, { code: 'MB', name: 'Manitoba' },
   { code: 'NS', name: 'Nova Scotia' }, { code: 'NB', name: 'New Brunswick' },
   { code: 'PE', name: 'PEI' }, { code: 'NL', name: 'Newfoundland' },
+  { code: 'YT', name: 'Yukon' }, { code: 'NT', name: 'Northwest Territories' }, { code: 'NU', name: 'Nunavut' },
 ]
 
 export function TemplateForm() {

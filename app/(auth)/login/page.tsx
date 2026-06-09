@@ -65,7 +65,7 @@ export default function LoginPage() {
             </svg>
           </div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#161616', marginBottom: '0.25rem' }}>
-            Peninsula
+            Lumis
           </h1>
           <p style={{ fontSize: '0.875rem', color: '#525252' }}>
             Health &amp; Safety Platform
@@ -131,7 +131,7 @@ export default function LoginPage() {
         </p>
 
         <p style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.75rem', color: '#6f6f6f' }}>
-          © {new Date().getFullYear()} Peninsula. All rights reserved.
+          © {new Date().getFullYear()} Lumis. All rights reserved.
         </p>
       </div>
     </div>

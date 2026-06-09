@@ -85,7 +85,7 @@ export default async function TrainingRecordDetailPage({ params }: PageProps) {
               completedDate={formatDate(record.completed_date)}
               expiryDate={record.expiry_date ? formatDate(record.expiry_date) : null}
               recordNumber={record.record_number ?? id}
-              orgName={org?.name ?? 'Peninsula OHS'}
+              orgName={org?.name ?? 'Lumis'}
             />
           )}
           <Tag type={statusTag(record.status)} size="md">

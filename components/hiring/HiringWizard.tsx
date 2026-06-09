@@ -11,6 +11,7 @@ import {
   finaliseHire,
   type ComplianceCheckResult,
 } from '@/app/actions/hiring'
+import { createBgcPackageAndSendConsent } from '@/app/actions/background-checks'
 import { ComplianceCheckPanel } from '@/components/hiring/ComplianceCheckPanel'
 import { DocumentGenerationPanel } from '@/components/hiring/DocumentGenerationPanel'
 import { PreStartChecklist } from '@/components/hiring/PreStartChecklist'
@@ -20,6 +21,7 @@ const STEPS = [
   'Role & Employment',
   'Compensation',
   'Compliance Check',
+  'Background Check',
   'Documents',
   'Signatures',
   'Pre-Start Tasks',
@@ -68,7 +70,11 @@ export function HiringWizard({ sites, departments, workers, hrTemplates }: Props
   const [complianceProvince, setComplianceProvince] = useState<string | null>(null)
   const [complianceChecked, setComplianceChecked] = useState(false)
 
-  // Step 5/6 state
+  // Step 5: BGC state
+  const [bgcPackageId, setBgcPackageId] = useState<string | null>(null)
+  const [bgcConsentSent, setBgcConsentSent] = useState(false)
+
+  // Step 6/7 state
   const [hireDocuments, setHireDocuments] = useState<HireDocument[]>([])
 
   // Step 2 state
@@ -148,16 +154,36 @@ export function HiringWizard({ sites, departments, workers, hrTemplates }: Props
     startTransition(async () => {
       const result = await acknowledgeComplianceOverride(hireId, overrides)
       if (result?.error) { setError(result.error); return }
-      setStep(5)
+      setStep(5) // → Background Check step
     })
   }
 
-  // ── Step 7: pre-start complete ──
-  function handlePreStartComplete() {
-    setStep(8)
+  // ── Step 5: BGC consent (optional) ──
+  function handleBgcSendConsent() {
+    if (!hireId) return
+    setError(null)
+    startTransition(async () => {
+      const result = await createBgcPackageAndSendConsent(hireId)
+      if (result.error) { setError(result.error); return }
+      setBgcPackageId(result.packageId)
+      setBgcConsentSent(true)
+    })
   }
 
-  // ── Step 8: finalise ──
+  function handleBgcSkip() {
+    setStep(6)
+  }
+
+  function handleBgcNext() {
+    setStep(6)
+  }
+
+  // ── Step 8: pre-start complete ──
+  function handlePreStartComplete() {
+    setStep(9)
+  }
+
+  // ── Step 9: finalise ──
   function handleFinalise() {
     if (!hireId) return
     setError(null)
@@ -369,21 +395,66 @@ export function HiringWizard({ sites, departments, workers, hrTemplates }: Props
             </div>
           )}
 
-          {/* ── STEP 5 ── */}
+          {/* ── STEP 5: Background Check ── */}
           {step === 5 && hireId && (
+            <div>
+              <p style={{ fontSize: '0.875rem', color: '#525252', marginBottom: '1rem' }}>
+                Background checks are required for certain roles under Canadian workplace law.
+                Initiating a check will send a secure consent link to the candidate&apos;s email.
+                You can skip this step if no background check is required for this role.
+              </p>
+              {bgcConsentSent ? (
+                <div style={{ backgroundColor: '#defbe6', border: '1px solid #24a148', borderRadius: 4, padding: '1rem', marginBottom: '1rem' }}>
+                  <p style={{ fontSize: '0.875rem', color: '#0e6027', fontWeight: 600, marginBottom: 4 }}>
+                    ✓ Consent email sent
+                  </p>
+                  <p style={{ fontSize: '0.8125rem', color: '#525252' }}>
+                    The candidate will receive a secure link to review and sign the consent form.
+                    You can proceed — the hire can continue while consent is collected.
+                  </p>
+                  {bgcPackageId && (
+                    <a href={`/background-checks/packages/${bgcPackageId}`} target="_blank" rel="noreferrer"
+                      style={{ fontSize: '0.8125rem', color: '#0f62fe', display: 'block', marginTop: 8 }}>
+                      Track background check →
+                    </a>
+                  )}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                  <Button kind="primary" onClick={handleBgcSendConsent} disabled={isPending}>
+                    {isPending ? 'Sending…' : 'Send Consent & Initiate Check'}
+                  </Button>
+                  <Button kind="ghost" onClick={handleBgcSkip} disabled={isPending}>
+                    Skip — no background check required
+                  </Button>
+                </div>
+              )}
+              {bgcConsentSent && (
+                <Button kind="primary" onClick={handleBgcNext} style={{ marginTop: '1rem' }}>
+                  Continue to Documents
+                </Button>
+              )}
+              <Button kind="secondary" onClick={() => setStep(4)} disabled={isPending} style={{ marginTop: '0.5rem' }}>
+                Back
+              </Button>
+            </div>
+          )}
+
+          {/* ── STEP 6: Documents ── */}
+          {step === 6 && hireId && (
             <div>
               <DocumentGenerationPanel
                 hireId={hireId}
                 availableTemplates={hrTemplates}
                 existingDocuments={hireDocuments}
-                onComplete={() => setStep(6)}
+                onComplete={() => setStep(7)}
               />
-              <Button kind="secondary" style={{ marginTop: '1rem' }} onClick={() => setStep(4)}>Back</Button>
+              <Button kind="secondary" style={{ marginTop: '1rem' }} onClick={() => setStep(5)}>Back</Button>
             </div>
           )}
 
-          {/* ── STEP 6 ── */}
-          {step === 6 && hireId && (
+          {/* ── STEP 7: Signatures ── */}
+          {step === 7 && hireId && (
             <div>
               <p style={{ fontSize: '0.875rem', color: '#525252', marginBottom: '1.5rem' }}>
                 Documents have been generated. Collect candidate signatures below or share the documents for signing.
@@ -395,27 +466,27 @@ export function HiringWizard({ sites, departments, workers, hrTemplates }: Props
                 </a>.
               </p>
               <div style={{ display: 'flex', gap: '1rem' }}>
-                <Button kind="secondary" onClick={() => setStep(5)} disabled={isPending}>Back</Button>
-                <Button kind="primary" onClick={() => setStep(7)}>
+                <Button kind="secondary" onClick={() => setStep(6)} disabled={isPending}>Back</Button>
+                <Button kind="primary" onClick={() => setStep(8)}>
                   Continue to Pre-Start Tasks
                 </Button>
               </div>
             </div>
           )}
 
-          {/* ── STEP 7 ── */}
-          {step === 7 && hireId && (
+          {/* ── STEP 8: Pre-Start Tasks ── */}
+          {step === 8 && hireId && (
             <div>
               <PreStartChecklist
                 hireId={hireId}
                 onComplete={handlePreStartComplete}
               />
-              <Button kind="secondary" style={{ marginTop: '1rem' }} onClick={() => setStep(6)} disabled={isPending}>Back</Button>
+              <Button kind="secondary" style={{ marginTop: '1rem' }} onClick={() => setStep(7)} disabled={isPending}>Back</Button>
             </div>
           )}
 
-          {/* ── STEP 8 ── */}
-          {step === 8 && hireId && (
+          {/* ── STEP 9: Complete Hire ── */}
+          {step === 9 && hireId && (
             <div>
               <InlineNotification
                 kind="info"
@@ -428,7 +499,7 @@ export function HiringWizard({ sites, departments, workers, hrTemplates }: Props
                 The candidate will receive a password-reset email so they can activate their account.
               </p>
               <div style={{ display: 'flex', gap: '1rem' }}>
-                <Button kind="secondary" onClick={() => setStep(7)} disabled={isPending}>Back</Button>
+                <Button kind="secondary" onClick={() => setStep(8)} disabled={isPending}>Back</Button>
                 <Button kind="primary" disabled={isPending} onClick={handleFinalise}>
                   {isPending ? 'Creating worker profile…' : 'Complete Hire'}
                 </Button>

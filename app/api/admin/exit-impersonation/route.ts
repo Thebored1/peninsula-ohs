@@ -6,6 +6,6 @@ export async function POST(request: NextRequest) {
   await supabase.auth.signOut()
 
   const response = NextResponse.json({ ok: true })
-  response.cookies.delete('peninsula_impersonating')
+  response.cookies.delete('lumis_impersonating')
   return response
 }

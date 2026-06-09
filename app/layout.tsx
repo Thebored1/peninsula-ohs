@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { IBM_Plex_Sans, IBM_Plex_Mono } from 'next/font/google'
 import { ServiceWorkerRegister } from '@/components/pwa/ServiceWorkerRegister'
+import { InstallPrompt } from '@/components/pwa/InstallPrompt'
 import './globals.scss'
 
 const ibmPlexSans = IBM_Plex_Sans({
@@ -25,12 +26,12 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'Peninsula — Health & Safety Platform',
+  title: 'Lumis — Health & Safety Platform',
   description: 'Occupational health and safety management',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Peninsula',
+    title: 'Lumis',
   },
   icons: {
     apple: '/icons/icon.svg',
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         {children}
         <ServiceWorkerRegister />
+        <InstallPrompt />
       </body>
     </html>
   )

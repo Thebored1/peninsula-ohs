@@ -367,7 +367,7 @@ export default function OnboardingWizard({ roles }: { roles: Role[] }) {
               You're all set!
             </h2>
             <p style={{ fontSize: '0.875rem', color: '#525252' }}>
-              Your workspace is ready. Start using Peninsula OHS.
+              Your workspace is ready. Start using Lumis.
             </p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>

@@ -4,7 +4,7 @@ import { validateSuperAdminSession, logSuperAdminAction } from '@/lib/super-admi
 
 export async function POST(request: NextRequest) {
   // 1. Validate super admin session
-  const token = request.cookies.get('peninsula_sa_token')?.value
+  const token = request.cookies.get('lumis_sa_token')?.value
   const admin = token ? await validateSuperAdminSession(token) : null
   if (!admin) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
 
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     actionLink: linkData.properties.action_link,
   })
 
-  response.cookies.set('peninsula_impersonating', JSON.stringify({
+  response.cookies.set('lumis_impersonating', JSON.stringify({
     orgId,
     orgName: orgName ?? 'Unknown',
   }), {

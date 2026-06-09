@@ -33,13 +33,13 @@ export default async function ReportsPage() {
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
-  let orgId: string
+  let orgId: string | null = null
   if (user) {
-    const { data: profile } = await supabase.from('user_profiles').select('organisation_id').eq('id', user.id).single()
+    const { data: profile } = await supabase.from('user_profiles').select('organisation_id').eq('id', user.id).maybeSingle()
     orgId = profile?.organisation_id ?? null
     if (!orgId) return <div style={{ padding: '2rem' }}><p style={{ color: '#6f6f6f' }}>Profile not found.</p></div>
   } else {
-    const { data: firstOrg } = await supabase.from('organisations').select('id').limit(1).single()
+    const { data: firstOrg } = await supabase.from('organisations').select('id').limit(1).maybeSingle()
     if (!firstOrg) return <div style={{ padding: '2rem' }}><p>No organisation found.</p></div>
     orgId = firstOrg.id
   }

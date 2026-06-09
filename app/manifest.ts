@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Peninsula OHS Platform',
-    short_name: 'Peninsula',
+    name: 'Lumis',
+    short_name: 'Lumis',
     description: 'Occupational health and safety management for field workers and managers',
     start_url: '/',
     display: 'standalone',
